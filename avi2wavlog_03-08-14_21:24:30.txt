@@ -1,2 +1,0 @@
-Logfile for avi2wav.sh
-Run was completed on 
