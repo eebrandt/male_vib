@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import numpy as np
+import matplotlib.pyplot as plt
 import ctypes
 
 
@@ -91,100 +92,261 @@ def plotlengths (scrapedur, thumpdur, buzzdur):
 	fig = plt.figure(figsize=(5, 4))
 	ax = fig.add_subplot(1,1,1)
 	# we're just looking at scrapes, thumps, and buzzes here.  Keep in mind that the x, y axes are backwards.
-	p1 = ax.scatter(scrapedur[5], scrapedur[4], color = "red", label = "scrapes")
-	p2 = ax.scatter(thumpdur[5], thumpdur[4], color = "green", label = "thumps")
-	p3 = ax.scatter(buzzdur[5], buzzdur[4], color = "blue", label = "buzzes")
+	p1 = ax.plot(scrapedur[5], scrapedur[4], color = "red", label = "scrapes", marker='o', linestyle = 'None')
+	p2 = ax.plot(thumpdur[5], thumpdur[4], color = "green", label = "thumps", marker='o', linestyle = 'None')
+	p3 = ax.plot(buzzdur[5], buzzdur[4], color = "blue", label = "buzzes", marker='o', linestyle = 'None')
 	# sets labels on plot axes
 	ax.set_xlabel('% of song at which feature begins')
 	ax.set_ylabel('Length of feature (s)')
 	# sets up legend
-	ax.legend([p2, p1, p3], ["scrapes", "thumps", "buzzes"], 2)
+	plt.legend(loc='upper left', shadow=True, numpoints = 1)
+	#ax.legend([p2, p1, p3], ["scrapes", "thumps", "buzzes"], 2, numpoints = 1)
 	# sets axis limits
 	plt.xlim(0, 1)
 	plt.ylim(0, 10)
 	# show plot
 	plt.show()
 
-def ratecalcs (durationinfo, srfile):
-	"""
-	This function takes in information about the duration of a given feature (usually scrape-rate regions), and the path of a file that lists each scrape-rate region and the number of scrapes found in that region.  It plots the rates/length of the song (normalized to 1), and returns the array containing rate information.
-	"""
-	import matplotlib.pyplot as plt
-	# variable to loop through each scrape-rate region
-	readvar = 0
-	# array to hold number of scrapes in a given scrape-rate region
-	srnumarray = []
-	# array to hold labels for eachregion
-	srlabelarray = []
-	# opens the file containing numbers of scrapes per scrape-region, note that we're opening it as a string
-	readsrarray = np.array(np.loadtxt(open(srfile),dtype = "string", delimiter = "\t,", skiprows = 0))
-	# loop to split the rows of the array we read in, into columns
-	while readvar < readsrarray.shape[0]:
-		# splits a given line of loadarray into a separate string
-		srarray = readsrarray[readvar].split()	
-		# converts counts to floats, adds them to the srnumarray
-		srnumarray.append(float(srarray[0]))
-		# writes all labels to srlabelarray
-		srlabelarray.append(srarray[1])
-		readvar = readvar + 1
-	# resets the looping counter
-	readvar = 0
-	# array to hold scrape-rate counts
-	countarray = []
-	# array to hold scrape rates
-	ratearray = []
-	# array to hold component time mid-points
-	midarray = []
-	# array to hold percent of total song at which midpoint occurs
-	percentarray = []
-	# array to hold lengths of components
+def newrates(readarray):
+	labelarray = []	
+	countarray=[]
 	lengtharray = []
-	# loop to calculate duration info, goes through durationinfo. note: durationinfo and the input rate file must be in the same order, or you'll get strange numbers			
-	while readvar < len(srlabelarray):
-		#print durationinfo[0, readvar]
-		#print srlabelarray[readvar]
-		# checks to make sure the labels in the two files are in the same order.  If not, it doesn't stop anything, but prints a warning
-		if durationinfo[0, readvar] not in srlabelarray[readvar]:
-			print 'The scrape-rate regions do not seem to be in the same order in both files.  You probably want to fix this and re-run these data.'
-		# scrape counts
-		counts = float(srnumarray[readvar])
+	ratearray = []
+	midarray = []
+	percentarray = []
+	readvar = 0
+	while readvar < readarray.shape[1]:
+		r_count_string = readarray[0, readvar]
+		labelarray.append( r_count_string.split('_')[0])
+		counts = float(r_count_string.split('_')[1])
 		countarray.append(counts)
 		# length of comonent
-		lengtharray.append(float(durationinfo[4, readvar]))
+		lengtharray.append(float(readarray[4, readvar]))
 		# counts/second
-		rate = counts/float(durationinfo[4, readvar])
+		rate = counts/float(readarray[4, readvar])
 		ratearray.append(float(rate))
 		# midpoint of component
-		mid = durationinfo[3, readvar]
+		mid = readarray[3, readvar]
 		midarray.append(float(mid))
 		# percent of song at which midpoint of component happens
-		percent = durationinfo[5, readvar]
-		percentarray.append(float(percent))					
-		readvar = readvar + 1		
+		percent = readarray[5, readvar]
+		percentarray.append(float(percent))
+		readvar = readvar + 1
 	global srtot
 	# makes the final array that gets returned to whoever called the function
-	srtot = [srlabelarray, countarray, lengtharray, ratearray, midarray, percentarray]
-	ndsrtot = np.array(srtot)
+	srtot = [labelarray, countarray, lengtharray, ratearray, midarray, percentarray]
+	ndsrtot = np.array(srtot)				
+	return srtot
 
+def plot_durs(durarray):
+	import matplotlib.pyplot as plt
 	# makes a figure of the rate data
 	fig = plt.figure(figsize=(5, 4))
 	ax = fig.add_subplot(1,1,1)
 	ax.set_xlabel('% of song at which feature begins')
 	ax.set_ylabel("Scrape Rate (scrapes/second)")
-	x = percentarray
-	y = ratearray
+	x = durarray[5]
+	y = durarray[3]
 	ratefit = np.polyfit(x, y, 1)
 	yfit = np.polyval(ratefit, x)
 	p1 = plt.plot(x, y, color = "red", marker='o', linestyle = 'None', label = 'scrape rates')
 	p2 = plt.plot(x, yfit, label = 'linear fit line')
 	plt.xlim(0, 1)
-	#print (min(y))
-	#print (min(y)) - .10 * min(y)
 	plt.ylim(min(y) - (.05 * min(y)), max(y) + (.10 * max(y)))
 	plt.legend(loc='upper center', shadow=True, numpoints = 1)
 	#plt.legend([p1, p2], ["scrape rate", "linear fit line"], 2, scatterpoints = 1)
 	plt.show()
-	return ndsrtot					
+		
+def importwav(Fs, wavpath):
+	from scipy import signal
+	import matplotlib.pyplot as plt
+	from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
+	from scipy.io.wavfile import read,write
+	from numpy import sin, linspace, pi
+
+	rate,data=read(wavpath)
+	y=data
+	# gets total length of "y" array, which amounts to the total number of samples in the clip
+	lungime=len(y)
+	#figures out  total time of feature(in seconds).  Does this by dividing the total number of y-values by the sample rate.
+	# it's important for the frame rate to be a float (with decimal point), otherwise it will give a divide by 0 error as int.
+	timp=len(y)/48000.
+	# generates equally-spaced units along the time domain, starting with zero and ending with the previously generated total time
+	t=linspace(0,timp,len(y))
+	#p1 = plt.plot(t,y)
+	#plt.xlim(0, timp)
+	#show()	
+	global wavdata
+	wavdata = [0,0]
+	wavdata = [t, y]
+		
+	return wavdata
+
+def getfreq(y, Fs):
+	import pylab
+	from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
+	from scipy import fft, arange, ifft
+
+	# number of samples
+	n = len(y) 
+	k = arange(n)
+	T = n/Fs
+	#two-sided frequency range
+	frq = k/T
+	# one side frequency range	
+	frq = frq[range(n/2)] 
+	# fft computation and normalization
+	Y = fft(y)/n
+	Y = Y[range(n/2)]	
+	#p1 = plt.plot(frq,abs(Y),'r') # plotting the spectrum
+	#pylab.xlim([0,500])
+	#pylab.ylim([0, 300])
+	#xlabel('Freq (Hz)')
+	#ylabel('|Y(freq)|')
+	#plt.show()
+	global fft_dat
+	fft_dat = [frq, abs(Y)]
+
+def getpeaks(frq, Y):
+	from pypeaks import Data, Intervals
+	import pylab
+	import numpy.ma as ma
+	import numpy as np
+	from scipy import signal
+	import matplotlib.pyplot as plt
+	from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
+	from scipy import fft, arange, ifft
+	from numpy import sin, linspace, pi
+	from scipy.io.wavfile import read,write
+	# first step of getting peaks
+	peaks_obj = Data(frq, Y, smoothness=20)
+	#second part of getting peaks
+	peaks_obj.get_peaks(method='slope')
+	#pull data out of peaks data object for filtering
+	#plt.plot(peaks_obj.peaks["peaks"][0], peaks_obj.peaks["peaks"][1], 'rD', ms=10 )
+	plt.show()
+
+	peaks = peaks_obj.peaks["peaks"] #1097
+
+	#peakplot = peaks_obj.plot()
 	
-importanns("/home/eebrandt/projects/temp_trials/test/5.41.labels.txt")
-ratecalcs(lengths_output[3], "/home/eebrandt/projects/temp_trials/test/5.41.sr.txt")
+	#p3 = plt.plot(peaks)
+	#show()
+	#peaksnp = np.zeros((2, len(peaks[0])))
+	#peaksnp[0] = peaks[0]
+	#peaksnp[1] = peaks[1] 
+	maxpeaks = max(peaks_obj.peaks["peaks"][1])
+	#plt.plot(peaks[1], peaks[0], linestyle = 'None', marker='o' )
+	#plt.xlim(0,500)
+	#plt.show()
+	#plt.plot(peaksnp[1], peaksnp[0], linestyle = 'None', marker='o')
+	#plt.show()
+
+	# filtering function: removes peaks that are shorter than 10% of the max peak
+	filteredypeaks = []
+	filteredxpeaks = []
+	cutoff = .10
+	filter_thresh = cutoff * maxpeaks
+	readvar = 0
+	while readvar < len(peaks_obj.peaks["peaks"][1]):
+		if peaks_obj.peaks["peaks"][1][readvar] > filter_thresh:
+			filteredxpeaks.append(peaks_obj.peaks["peaks"][0][readvar])
+			filteredypeaks.append(peaks_obj.peaks["peaks"][1][readvar])
+		readvar = readvar +1
+	filteredpeaks = [filteredxpeaks, filteredypeaks]
+
+	#plt.plot(peaks_obj.x, peaks_obj.y, ls='-', c='b', lw='1.5')
+	#plt.plot(filteredpeaks[1], filteredpeaks[0], 'rD', ms=10)
+        #plt.plot(peaks_obj.peaks["valleys"][0], peaks_obj.peaks["valleys"][1], 'yD', ms=5)	
+	#plt.plot(filteredpeaks[0], filteredpeaks[1], linestyle = 'None', marker='o')
+	#plt.show()
+
+	# now we need to make a plot comparing the frequency chart to our found peaks
+	global filter1_peaks
+	
+	filter1_peaks = np.array(filteredpeaks)
+	plotfinalpeaksy = []
+	absY = abs(Y)
+	#print Y
+	#print absY
+	readvar = 0
+	#print len(filter1_peaks[1])
+	while readvar < len(filter1_peaks[1]):
+		ypeak = np.searchsorted(frq,[filter1_peaks[0][readvar,]],side='left')[0]
+		plotfinalpeaksy.append(absY[ypeak])
+		readvar = readvar + 1
+
+	p1 = plt.plot(frq,abs(Y),'r') # plotting the spectrum
+	p2 = plt.plot(filter1_peaks[0], plotfinalpeaksy, linestyle = "none", marker = "o", color = "black")
+	pylab.xlim([0,500])
+	pylab.ylim([0, 300])
+	xlabel('Freq (Hz)')
+	ylabel('|Y(freq)|')
+	#plt.show()
+	
+	# second filtering step.  Judders peaks back and forth along the x-axis of the frequency plot until they reach the true local max (y)
+	
+	readvar = 0
+		#while readvar < plotfinalpeaksy:
+			# figure out the x-distance to the next closest peak.  
+			# Divide this distance by 2 (avoids jumping over to next peak)
+			# match finalpeaks[0] as closely as possible to the x (frq) domain of the wave plot
+			# somehow translate "judder distance" to the x-distance of frequency plot
+			# translate distance in terms of index
+			# search an area from before to after the peak for the maximum y value
+			# append this y value to a new array
+			# append the x value to a new array
+	final_peaks = []
+	#final_peaks = np.array(filter2_peaks)
+	return final_peaks
+
+importanns("/home/eebrandt/projects/temp_trials/test/5.41.test.labels")
+Fs = 48000.0
+wavpath = '/home/eebrandt/projects/temp_trials/test/5-41.wav'
+#print lengths_output[0][1]108.609362'
+importwav(Fs, wavpath)
+#print wavdata[0][5213249]# 5213249 = 108.609358, 5213250 = 108.609379
+def featurefinder():
+	#lengths_output
+	#wavdata
+	#featurename
+	
+	featureindex =  int(np.where(lengths_output[2][0]=="b5")[0])
+	print featureindex[0]
+	#print lengths_output[2][0]
+	start = float(lengths_output[2][1][featureindex])
+	end = float(lengths_output[2][2][featureindex])
+	closestbegin =  np.searchsorted(wavdata[0],[start,],side='left')[0]
+	closestend = np.searchsorted(wavdata[0],[end,],side = 'right')[0]
+	cropamount = int(float(closestend - closestbegin) *.25)
+	closestbegin_cr = closestbegin + cropamount
+	closestend_cr = closestend - cropamount
+
+
+	feature_raw = [wavdata[0][closestbegin:closestend], wavdata[1][closestbegin:closestend]]
+	feature = [wavdata[0][closestbegin_cr:closestend_cr], wavdata[1][closestbegin_cr:closestend_cr]]
+
+
+start = float(lengths_output[2][1][0])
+end = float(lengths_output[2][2][0])
+closestbegin =  np.searchsorted(wavdata[0],[start,],side='left')[0]
+closestend = np.searchsorted(wavdata[0],[end,],side = 'right')[0]
+cropamount = int(float(closestend - closestbegin) *.25)
+closestbegin_cr = closestbegin + cropamount
+closestend_cr = closestend - cropamount
+
+
+
+
+feature_raw = [wavdata[0][closestbegin:closestend], wavdata[1][closestbegin:closestend]]
+feature = [wavdata[0][closestbegin_cr:closestend_cr], wavdata[1][closestbegin_cr:closestend_cr]]
+featurefinder()
+getfreq(feature[1], Fs)
+getpeaks(fft_dat[0], fft_dat[1])
+
+#p1 = plt.plot(feature_raw[0], feature_raw[1])
+#p1 = plt.plot(feature[0], feature[1])
+#plt.show()
+
+#newrates(lengths_output[3])
+#plot_durs(srtot)		
