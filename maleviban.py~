@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import numpy as np
+from pylab import*
 import matplotlib.pyplot as plt
 import ctypes
 
@@ -207,7 +208,7 @@ def getfreq(y, Fs):
 	global fft_dat
 	fft_dat = [frq, abs(Y)]
 
-def getpeaks(frq, Y):
+def getpeaks(frq, Y, cutoff):
 	from pypeaks import Data, Intervals
 	import pylab
 	import numpy.ma as ma
@@ -224,17 +225,17 @@ def getpeaks(frq, Y):
 	peaks_obj.get_peaks(method='slope')
 	#pull data out of peaks data object for filtering
 	#plt.plot(peaks_obj.peaks["peaks"][0], peaks_obj.peaks["peaks"][1], 'rD', ms=10 )
-	plt.show()
+	#plt.show()
 
-	peaks = peaks_obj.peaks["peaks"] #1097
+	peaks = peaks_obj.peaks["peaks"]
 
 	#peakplot = peaks_obj.plot()
 	
 	#p3 = plt.plot(peaks)
 	#show()
-	#peaksnp = np.zeros((2, len(peaks[0])))
-	#peaksnp[0] = peaks[0]
-	#peaksnp[1] = peaks[1] 
+	peaksnp = np.zeros((2, len(peaks[0])))
+	peaksnp[0] = peaks[0]
+	peaksnp[1] = peaks[1] 
 	maxpeaks = max(peaks_obj.peaks["peaks"][1])
 	#plt.plot(peaks[1], peaks[0], linestyle = 'None', marker='o' )
 	#plt.xlim(0,500)
@@ -242,10 +243,9 @@ def getpeaks(frq, Y):
 	#plt.plot(peaksnp[1], peaksnp[0], linestyle = 'None', marker='o')
 	#plt.show()
 
-	# filtering function: removes peaks that are shorter than 10% of the max peak
+	# filtering function: removes peaks that are shorter than the cutoff specified in function
 	filteredypeaks = []
 	filteredxpeaks = []
-	cutoff = .10
 	filter_thresh = cutoff * maxpeaks
 	readvar = 0
 	while readvar < len(peaks_obj.peaks["peaks"][1]):
@@ -265,88 +265,115 @@ def getpeaks(frq, Y):
 	global filter1_peaks
 	
 	filter1_peaks = np.array(filteredpeaks)
-	plotfinalpeaksy = []
+	filter1_peaksy = []
 	absY = abs(Y)
-	#print Y
+	# Y
 	#print absY
 	readvar = 0
 	#print len(filter1_peaks[1])
 	while readvar < len(filter1_peaks[1]):
 		ypeak = np.searchsorted(frq,[filter1_peaks[0][readvar,]],side='left')[0]
-		plotfinalpeaksy.append(absY[ypeak])
+		filter1_peaksy.append(absY[ypeak])
 		readvar = readvar + 1
 
 	p1 = plt.plot(frq,abs(Y),'r') # plotting the spectrum
-	p2 = plt.plot(filter1_peaks[0], plotfinalpeaksy, linestyle = "none", marker = "o", color = "black")
+	#abs(Y)
+	p2 = plt.plot(filter1_peaks[0], filter1_peaksy, linestyle = "none", marker = "o", color = "black")
 	pylab.xlim([0,500])
 	pylab.ylim([0, 300])
 	xlabel('Freq (Hz)')
 	ylabel('|Y(freq)|')
 	#plt.show()
+	#print filter1_peaks
 	
 	# second filtering step.  Judders peaks back and forth along the x-axis of the frequency plot until they reach the true local max (y)
-	
+	rangeleft_arr = []
+	rangeright_arr = []
 	readvar = 0
-		#while readvar < plotfinalpeaksy:
-			# figure out the x-distance to the next closest peak.  
-			# Divide this distance by 2 (avoids jumping over to next peak)
-			# match finalpeaks[0] as closely as possible to the x (frq) domain of the wave plot
-			# somehow translate "judder distance" to the x-distance of frequency plot
-			# translate distance in terms of index
-			# search an area from before to after the peak for the maximum y value
-			# append this y value to a new array
-			# append the x value to a new array
+	while readvar < len(filter1_peaks[0]):
+		# figure out the x-distance to the next closest peak, then 
+		if readvar == 0:
+			xdist =  abs(filter1_peaks[0][readvar +1] - filter1_peaks[0][readvar])
+			 
+		elif readvar == len(filter1_peaks[0]) - 1:
+			xdist = abs(filter1_peaks[0][readvar - 1] - filter1_peaks[0][readvar])
+		else:
+			distright = abs(filter1_peaks[0][readvar +1] - filter1_peaks[0][readvar])
+			distleft = abs(filter1_peaks[0][readvar - 1] - filter1_peaks[0][readvar])
+			xdist = min(distright, distleft)
+
+		xdist2 = xdist/2
+		rangeleft = max(0, filter1_peaks[0][readvar] - xdist2)
+		rangeright = min(filter1_peaks[0][readvar] + xdist2, max(frq))
+		rangeright_arr.append(rangeright)
+		rangeleft_arr.append(rangeleft)
+		readvar = readvar + 1
+	#print rangeright_arr
+	#print rangeleft_arr
+	#print frq
+	finalpeaksx = []
+	finalpeaksy = []
+
+	readvar = 0
+	while readvar < len(rangeright_arr):
+		xmin = np.searchsorted(frq,[rangeleft_arr[readvar]],side='left')[0]
+		#print frq[xmin]
+		xmax = np.searchsorted(frq,[rangeright_arr[readvar]],side ='right')[0]
+		finalpeaky = max(abs(Y)[xmin:xmax])
+		indexy = np.where(abs(Y)==finalpeaky)
+		finalpeakx = frq[indexy]
+		
+		finalpeaksy.append(finalpeaky)
+		finalpeaksx.append(finalpeakx)
+		#print finalpeaksy
+		maxarray =  max([frq[xmin:xmax]])
+		readvar = readvar + 1
+	p3 = plt.plot(finalpeaksx, finalpeaksy, linestyle = "none", marker = "o", color = "green")
+	plt.show()
 	final_peaks = []
-	#final_peaks = np.array(filter2_peaks)
+	final_peaks = [finalpeaksx, finalpeaksy]
 	return final_peaks
 
-importanns("/home/eebrandt/projects/temp_trials/test/5.41.test.labels")
-Fs = 48000.0
-wavpath = '/home/eebrandt/projects/temp_trials/test/5-41.wav'
-#print lengths_output[0][1]108.609362'
-importwav(Fs, wavpath)
-#print wavdata[0][5213249]# 5213249 = 108.609358, 5213250 = 108.609379
-def featurefinder():
-	#lengths_output
-	#wavdata
-	#featurename
-	
-	featureindex =  int(np.where(lengths_output[2][0]=="b5")[0])
-	print featureindex[0]
-	#print lengths_output[2][0]
-	start = float(lengths_output[2][1][featureindex])
-	end = float(lengths_output[2][2][featureindex])
+
+
+
+
+def featurefinder(lengths_output, featuretype, featureindex, wavdata, crop):
+	start = float(lengths_output[featuretype][1][featureindex])
+	end = float(lengths_output[featuretype][2][featureindex])
 	closestbegin =  np.searchsorted(wavdata[0],[start,],side='left')[0]
 	closestend = np.searchsorted(wavdata[0],[end,],side = 'right')[0]
-	cropamount = int(float(closestend - closestbegin) *.25)
+	cropamount = int(float(closestend - closestbegin) * crop)
 	closestbegin_cr = closestbegin + cropamount
 	closestend_cr = closestend - cropamount
 
 
-	feature_raw = [wavdata[0][closestbegin:closestend], wavdata[1][closestbegin:closestend]]
-	feature = [wavdata[0][closestbegin_cr:closestend_cr], wavdata[1][closestbegin_cr:closestend_cr]]
+	feature_whole = [wavdata[0][closestbegin:closestend], wavdata[1][closestbegin:closestend]]
+	feature_buzz = [wavdata[0][closestbegin_cr:closestend_cr], wavdata[1][closestbegin_cr:closestend_cr]]
+	global features
+	features = []
+	features = [feature_whole, feature_buzz]
+	return features
 
+wavpath = '/home/eebrandt/projects/temp_trials/test/5-41.wav'
+annwav = '/home/eebrandt/projects/temp_trials/test/5.41.test.labels'
+Fs = 48000.0
 
-start = float(lengths_output[2][1][0])
-end = float(lengths_output[2][2][0])
-closestbegin =  np.searchsorted(wavdata[0],[start,],side='left')[0]
-closestend = np.searchsorted(wavdata[0],[end,],side = 'right')[0]
-cropamount = int(float(closestend - closestbegin) *.25)
-closestbegin_cr = closestbegin + cropamount
-closestend_cr = closestend - cropamount
+# runs the whole thing
 
+importanns(annwav)
+plotlengths(lengths_output[0], lengths_output[1], lengths_output[2])
+newrates(lengths_output[3])
+plot_durs(srtot)
 
-
-
-feature_raw = [wavdata[0][closestbegin:closestend], wavdata[1][closestbegin:closestend]]
-feature = [wavdata[0][closestbegin_cr:closestend_cr], wavdata[1][closestbegin_cr:closestend_cr]]
-featurefinder()
-getfreq(feature[1], Fs)
-getpeaks(fft_dat[0], fft_dat[1])
+importwav(Fs, wavpath)
+featurefinder(lengths_output,3,3,wavdata, .25)
+getfreq(features[2][5], Fs)
+getpeaks(fft_dat[0], fft_dat[1], .10)
 
 #p1 = plt.plot(feature_raw[0], feature_raw[1])
 #p1 = plt.plot(feature[0], feature[1])
 #plt.show()
 
 #newrates(lengths_output[3])
-#plot_durs(srtot)		
+		
