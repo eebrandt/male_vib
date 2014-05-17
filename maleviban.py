@@ -108,7 +108,7 @@ def plotlengths (scrapedur, thumpdur, buzzdur):
 	# show plot
 	plt.show()
 
-def newrates(readarray):
+def rates(readarray):
 	labelarray = []	
 	countarray=[]
 	lengtharray = []
@@ -199,12 +199,6 @@ def getfreq(y, Fs):
 	# fft computation and normalization
 	Y = fft(y)/n
 	Y = Y[range(n/2)]	
-	#p1 = plt.plot(frq,abs(Y),'r') # plotting the spectrum
-	#pylab.xlim([0,500])
-	#pylab.ylim([0, 300])
-	#xlabel('Freq (Hz)')
-	#ylabel('|Y(freq)|')
-	#plt.show()
 	global fft_dat
 	fft_dat = [frq, abs(Y)]
 
@@ -254,12 +248,6 @@ def getpeaks(frq, Y, cutoff):
 			filteredypeaks.append(peaks_obj.peaks["peaks"][1][readvar])
 		readvar = readvar +1
 	filteredpeaks = [filteredxpeaks, filteredypeaks]
-
-	#plt.plot(peaks_obj.x, peaks_obj.y, ls='-', c='b', lw='1.5')
-	#plt.plot(filteredpeaks[1], filteredpeaks[0], 'rD', ms=10)
-        #plt.plot(peaks_obj.peaks["valleys"][0], peaks_obj.peaks["valleys"][1], 'yD', ms=5)	
-	#plt.plot(filteredpeaks[0], filteredpeaks[1], linestyle = 'None', marker='o')
-	#plt.show()
 
 	# now we need to make a plot comparing the frequency chart to our found peaks
 	global filter1_peaks
@@ -334,10 +322,6 @@ def getpeaks(frq, Y, cutoff):
 	final_peaks = [finalpeaksx, finalpeaksy]
 	return final_peaks
 
-
-
-
-
 def featurefinder(lengths_output, featuretype, featureindex, wavdata, crop):
 	start = float(lengths_output[featuretype][1][featureindex])
 	end = float(lengths_output[featuretype][2][featureindex])
@@ -353,27 +337,4 @@ def featurefinder(lengths_output, featuretype, featureindex, wavdata, crop):
 	global features
 	features = []
 	features = [feature_whole, feature_buzz]
-	return features
-
-wavpath = '/home/eebrandt/projects/temp_trials/test/5-41.wav'
-annwav = '/home/eebrandt/projects/temp_trials/test/5.41.test.labels'
-Fs = 48000.0
-
-# runs the whole thing
-
-importanns(annwav)
-plotlengths(lengths_output[0], lengths_output[1], lengths_output[2])
-newrates(lengths_output[3])
-plot_durs(srtot)
-
-importwav(Fs, wavpath)
-featurefinder(lengths_output,2,3,wavdata, .25)
-getfreq(features[1][1], Fs)
-getpeaks(fft_dat[0], fft_dat[1], .10)
-
-#p1 = plt.plot(feature_raw[0], feature_raw[1])
-#p1 = plt.plot(feature[0], feature[1])
-#plt.show()
-
-#newrates(lengths_output[3])
-		
+	return features		
