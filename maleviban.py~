@@ -3,6 +3,7 @@ import numpy as np
 from pylab import*
 import matplotlib.pyplot as plt
 import ctypes
+import config as cfg
 
 
 def importanns(wavpath):
@@ -37,9 +38,9 @@ def importanns(wavpath):
 	stringloop = 0
 	
 	# sets the output variable as global so it can be returned
-	global lengths_output
+	#global lengths_output
 	# defines the output variable
-	lengths_output = [0, 0, 0, 0]
+	
 
 	# loops through each string we want to test
 	while stringloop < len(strings):
@@ -74,11 +75,11 @@ def importanns(wavpath):
 		# combines all of our separate arrays into one variable
 		divarray = np.array([divlabels, divstart, divend, divmid, divlength, divpercent])
 		# sets our current divnparray to the relevant portion of the output variable	
-		lengths_output[stringloop] = divarray
+		cfg.lengths_output[stringloop] = divarray
 		# resets all our arrays so we don't just keep appending them
 		stringloop = stringloop + 1
 	# returns our output when we're all done	
-	return lengths_output
+	#return cfg.lengths_output
 
 
 
@@ -108,7 +109,7 @@ def plotlengths (scrapedur, thumpdur, buzzdur):
 	# show plot
 	plt.show()
 
-def newrates(readarray):
+def rates(readarray):
 	labelarray = []	
 	countarray=[]
 	lengtharray = []
@@ -166,20 +167,20 @@ def importwav(Fs, wavpath):
 	from numpy import sin, linspace, pi
 
 	rate,data=read(wavpath)
-	y=data
+	cfg.y=data
 	# gets total length of "y" array, which amounts to the total number of samples in the clip
-	lungime=len(y)
+	lungime=len(cfg.y)
 	#figures out  total time of feature(in seconds).  Does this by dividing the total number of y-values by the sample rate.
 	# it's important for the frame rate to be a float (with decimal point), otherwise it will give a divide by 0 error as int.
-	timp=len(y)/48000.
+	timp=len(cfg.y)/48000.
 	# generates equally-spaced units along the time domain, starting with zero and ending with the previously generated total time
-	t=linspace(0,timp,len(y))
+	t=linspace(0,timp,len(cfg.y))
 	#p1 = plt.plot(t,y)
 	#plt.xlim(0, timp)
 	#show()	
 	global wavdata
-	wavdata = [0,0]
-	wavdata = [t, y]
+	
+	wavdata = [t, cfg.y]
 		
 	return wavdata
 
@@ -322,10 +323,6 @@ def getpeaks(frq, Y, cutoff):
 	final_peaks = [finalpeaksx, finalpeaksy]
 	return final_peaks
 
-
-
-
-
 def featurefinder(lengths_output, featuretype, featureindex, wavdata, crop):
 	start = float(lengths_output[featuretype][1][featureindex])
 	end = float(lengths_output[featuretype][2][featureindex])
@@ -341,23 +338,4 @@ def featurefinder(lengths_output, featuretype, featureindex, wavdata, crop):
 	global features
 	features = []
 	features = [feature_whole, feature_buzz]
-	return features
-
-wavpath = '/home/eebrandt/projects/temp_trials/test/5-41.wav'
-annwav = '/home/eebrandt/projects/temp_trials/test/5.41.test.labels'
-Fs = 48000.0
-
-# runs the whole thing
-
-importanns(annwav)
-plotlengths(lengths_output[0], lengths_output[1], lengths_output[2])
-newrates(lengths_output[3])
-plot_durs(srtot)
-
-importwav(Fs, wavpath)
-featurefinder(lengths_output,2,3,wavdata, .25)
-getfreq(features[1][1], Fs)
-getpeaks(fft_dat[0], fft_dat[1], .10)
-
-
-		
+	return features		
