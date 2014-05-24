@@ -78,12 +78,13 @@ def importanns(wavpath):
 		cfg.lengths_output[stringloop] = divarray
 		# resets all our arrays so we don't just keep appending them
 		stringloop = stringloop + 1
-	# returns our output when we're all done	
-	#return cfg.lengths_output
+	# returns our output when we're all done
+	#print cfg.lengths_output	
+	return cfg.lengths_output
 
 
 
-def plotlengths (scrapedur, thumpdur, buzzdur):
+def plotlengths (scrapedur, thumpdur, buzzdur, plot_durs_title):
 	""" 
 	This function takes three arrays that contain duration info for scrapes, thumps, and buzzes.  It generates a scatterplot that plots the duration of a component over the total length of the song (length given in percent length).
 	"""
@@ -106,6 +107,7 @@ def plotlengths (scrapedur, thumpdur, buzzdur):
 	# sets axis limits
 	plt.xlim(0, 1)
 	plt.ylim(0, 10)
+	plt.title(plot_durs_title)
 	# show plot
 	plt.show()
 
@@ -134,13 +136,13 @@ def rates(readarray):
 		percent = readarray[5, readvar]
 		percentarray.append(float(percent))
 		readvar = readvar + 1
-	global srtot
+	#global srtot
 	# makes the final array that gets returned to whoever called the function
-	srtot = [labelarray, countarray, lengtharray, ratearray, midarray, percentarray]
-	ndsrtot = np.array(srtot)				
-	return srtot
+	cfg.srtot = [labelarray, countarray, lengtharray, ratearray, midarray, percentarray]
+	ndsrtot = np.array(cfg.srtot)				
+	return cfg.srtot
 
-def plot_durs(durarray):
+def plot_rates(durarray, plot_rates_title):
 	import matplotlib.pyplot as plt
 	# makes a figure of the rate data
 	fig = plt.figure(figsize=(5, 4))
@@ -156,10 +158,11 @@ def plot_durs(durarray):
 	plt.xlim(0, 1)
 	plt.ylim(min(y) - (.05 * min(y)), max(y) + (.10 * max(y)))
 	plt.legend(loc='upper center', shadow=True, numpoints = 1)
+	plt.title(plot_rates_title)
 	#plt.legend([p1, p2], ["scrape rate", "linear fit line"], 2, scatterpoints = 1)
 	plt.show()
 		
-def importwav(Fs, wavpath):
+def importwav(wavpath):
 	from scipy import signal
 	import matplotlib.pyplot as plt
 	from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
@@ -167,6 +170,7 @@ def importwav(Fs, wavpath):
 	from numpy import sin, linspace, pi
 
 	rate,data=read(wavpath)
+	cfg.rate = float(rate)
 	cfg.y=data
 	# gets total length of "y" array, which amounts to the total number of samples in the clip
 	lungime=len(cfg.y)
@@ -174,18 +178,18 @@ def importwav(Fs, wavpath):
 	# it's important for the frame rate to be a float (with decimal point), otherwise it will give a divide by 0 error as int.
 	timp=len(cfg.y)/48000.
 	# generates equally-spaced units along the time domain, starting with zero and ending with the previously generated total time
-	t=linspace(0,timp,len(cfg.y))
+	cfg.t=linspace(0,timp,len(cfg.y))
 	#p1 = plt.plot(t,y)
 	#plt.xlim(0, timp)
 	#show()	
-	global wavdata
-	
-	wavdata = [t, cfg.y]
+	cfg.wavdata = [cfg.t, cfg.y, cfg.rate]
 		
-	return wavdata
+	return cfg.wavdata
 
-def getfreq(y, Fs):
+def getfreq(y, Fs, normal):
+	import scipy
 	import pylab
+	import math
 	from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
 	from scipy import fft, arange, ifft
 
@@ -194,16 +198,34 @@ def getfreq(y, Fs):
 	k = arange(n)
 	T = n/Fs
 	#two-sided frequency range
-	frq = k/T
+	cfg.frq = k/T
 	# one side frequency range	
-	frq = frq[range(n/2)] 
+	cfg.frq = cfg.frq[range(n/2)] 
+	
 	# fft computation and normalization
-	Y = fft(y)/n
-	Y = Y[range(n/2)]	
-	global fft_dat
-	fft_dat = [frq, abs(Y)]
+	# take the fft
+	cfg.Y = fft(y)
+	# extract the real component of the fft array only
+	cfg.Y = cfg.Y.real
+	# don't know what this does
+	cfg.Y = cfg.Y[range(n/2)]
+	# normalizes it 
+	if normal == -1:
+		normal = max(Y)
+		#print max(Y)	
+	cfg.Y = (cfg.Y/normal) * 100
+	cfg.Y = abs(cfg.Y)
+	
+	
+	p1 = plt.plot(cfg.frq,abs(cfg.Y),'r')
+	pylab.xscale('log')
+	pylab.xlim([0,4000])
+	pylab.ylim([0,max(abs(cfg.Y))])
+	#show()	
+	cfg.fft_dat = [cfg.frq, cfg.Y]
+	return cfg.fft_dat
 
-def getpeaks(frq, Y, cutoff):
+def getpeaks(frq, Y, cutoff, plot_title):
 	from pypeaks import Data, Intervals
 	import pylab
 	import numpy.ma as ma
@@ -223,6 +245,7 @@ def getpeaks(frq, Y, cutoff):
 	#plt.show()
 
 	peaks = peaks_obj.peaks["peaks"]
+	#print peaks
 
 	#peakplot = peaks_obj.plot()
 	
@@ -232,6 +255,7 @@ def getpeaks(frq, Y, cutoff):
 	peaksnp[0] = peaks[0]
 	peaksnp[1] = peaks[1] 
 	maxpeaks = max(peaks_obj.peaks["peaks"][1])
+	#print maxpeaks
 	#plt.plot(peaks[1], peaks[0], linestyle = 'None', marker='o' )
 	#plt.xlim(0,500)
 	#plt.show()
@@ -269,7 +293,7 @@ def getpeaks(frq, Y, cutoff):
 	#abs(Y)
 	p2 = plt.plot(filter1_peaks[0], filter1_peaksy, linestyle = "none", marker = "o", color = "black")
 	pylab.xlim([0,500])
-	pylab.ylim([0, 300])
+	pylab.ylim([0,400])
 	xlabel('Freq (Hz)')
 	ylabel('|Y(freq)|')
 	#plt.show()
@@ -279,6 +303,7 @@ def getpeaks(frq, Y, cutoff):
 	rangeleft_arr = []
 	rangeright_arr = []
 	readvar = 0
+	#print filter1_peaks
 	while readvar < len(filter1_peaks[0]):
 		# figure out the x-distance to the next closest peak, then 
 		if readvar == 0:
@@ -297,16 +322,12 @@ def getpeaks(frq, Y, cutoff):
 		rangeright_arr.append(rangeright)
 		rangeleft_arr.append(rangeleft)
 		readvar = readvar + 1
-	#print rangeright_arr
-	#print rangeleft_arr
-	#print frq
 	finalpeaksx = []
 	finalpeaksy = []
 
 	readvar = 0
 	while readvar < len(rangeright_arr):
 		xmin = np.searchsorted(frq,[rangeleft_arr[readvar]],side='left')[0]
-		#print frq[xmin]
 		xmax = np.searchsorted(frq,[rangeright_arr[readvar]],side ='right')[0]
 		finalpeaky = max(abs(Y)[xmin:xmax])
 		indexy = np.where(abs(Y)==finalpeaky)
@@ -317,13 +338,18 @@ def getpeaks(frq, Y, cutoff):
 		#print finalpeaksy
 		maxarray =  max([frq[xmin:xmax]])
 		readvar = readvar + 1
+	maxpeak = round(max(finalpeaksx),0)
+	maxpeakstr = str(maxpeak) + " Hz"
 	p3 = plt.plot(finalpeaksx, finalpeaksy, linestyle = "none", marker = "o", color = "green")
+	plt.title(plot_title + " - max peak at: " + maxpeakstr)
 	plt.show()
 	final_peaks = []
 	final_peaks = [finalpeaksx, finalpeaksy]
 	return final_peaks
 
-def featurefinder(lengths_output, featuretype, featureindex, wavdata, crop):
+def featurefinder(lengths_output, featuretypestr, featureindex, wavdata, crop):
+	featuretype = cfg.featurekey[featuretypestr]
+
 	start = float(lengths_output[featuretype][1][featureindex])
 	end = float(lengths_output[featuretype][2][featureindex])
 	closestbegin =  np.searchsorted(wavdata[0],[start,],side='left')[0]
@@ -331,11 +357,17 @@ def featurefinder(lengths_output, featuretype, featureindex, wavdata, crop):
 	cropamount = int(float(closestend - closestbegin) * crop)
 	closestbegin_cr = closestbegin + cropamount
 	closestend_cr = closestend - cropamount
-
+	
 
 	feature_whole = [wavdata[0][closestbegin:closestend], wavdata[1][closestbegin:closestend]]
 	feature_buzz = [wavdata[0][closestbegin_cr:closestend_cr], wavdata[1][closestbegin_cr:closestend_cr]]
-	global features
-	features = []
-	features = [feature_whole, feature_buzz]
-	return features		
+	cfg.feature = [feature_whole, feature_buzz]
+	#print cfg.feature
+	return cfg.feature	
+
+#wavpath = "/home/eebrandt/projects/temp_trials/test/buzz.wav"
+#importwav(wavpath)
+#featurefinder(lengths_output[2][3],wavdata, .25)
+#getfreq(wavdata[1], cfg.rate, 10000000)
+#cutoff = .05
+#getpeaks(cfg.frq, cfg.Y, cutoff)	
