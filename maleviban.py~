@@ -1,9 +1,26 @@
 #!/usr/bin/python
+
 import numpy as np
-from pylab import*
-import matplotlib.pyplot as plt
+import scipy
+import math
 import ctypes
+import tkMessageBox
+import pylab
+
+import matplotlib.pyplot as plt
 import config as cfg
+import numpy.ma as ma
+
+from scipy import signal
+from pylab import*
+from scipy.io.wavfile import read,write
+from numpy import sin, linspace, pi
+#from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
+from scipy import fft, arange, ifft, signal, fft, arange, ifft
+from pypeaks import Data, Intervals
+from numpy import sin, linspace, pi
+from scipy.io.wavfile import read,write
+
 
 
 def importanns(wavpath):
@@ -41,7 +58,6 @@ def importanns(wavpath):
 	#global lengths_output
 	# defines the output variable
 	
-
 	# loops through each string we want to test
 	while stringloop < len(strings):
 		readvar = 0
@@ -73,42 +89,40 @@ def importanns(wavpath):
 				divpercent.append(percent)
 			readvar = readvar +1
 		# combines all of our separate arrays into one variable
-		divarray = np.array([divlabels, divstart, divend, divmid, divlength, divpercent])
+		divarray = np.array([divlabels, divstart, divend, divmid, divlength, divpercent], dtype = 'S20')
 		# sets our current divnparray to the relevant portion of the output variable	
 		cfg.lengths_output[stringloop] = divarray
 		# resets all our arrays so we don't just keep appending them
 		stringloop = stringloop + 1
-	# returns our output when we're all done
-	#print cfg.lengths_output	
+	# returns our output when we're all done	
 	return cfg.lengths_output
 
 
-
-def plotlengths (scrapedur, thumpdur, buzzdur):
+def plotlengths (scrapedur, thumpdur, buzzdur, plot_durs_title):
 	""" 
-	This function takes three arrays that contain duration info for scrapes, thumps, and buzzes.  It generates a scatterplot that plots the duration of a component over the total length of the song (length given in percent length).
+	This function takes three arrays that contain duration info for scrapes, thumps, and buzzes.  It generates a scatterplot that plots the duration of a component over the total length of the song (length given in percent length)  This is a good quick visual check to make sure everything's working well.  It also gives a good indication of how song elements are distributed temporally.
 	"""
-# make plots for an individual that compare where the signal occurs in time to its length.  This is a good quick visual check to make sure everything's working well.  It also gives a good indication of how song elements are distributed temporally.
-	import matplotlib.pyplot as plt
-	import pylab
 
-	fig = plt.figure(figsize=(5, 4))
-	ax = fig.add_subplot(1,1,1)
+	figlengths = plt.figure(figsize=(5, 4))
+	ax1 = figlengths.add_subplot(1,1,1)
 	# we're just looking at scrapes, thumps, and buzzes here.  Keep in mind that the x, y axes are backwards.
-	p1 = ax.plot(scrapedur[5], scrapedur[4], color = "red", label = "scrapes", marker='o', linestyle = 'None')
-	p2 = ax.plot(thumpdur[5], thumpdur[4], color = "green", label = "thumps", marker='o', linestyle = 'None')
-	p3 = ax.plot(buzzdur[5], buzzdur[4], color = "blue", label = "buzzes", marker='o', linestyle = 'None')
+	p1 = ax1.plot(scrapedur[5], scrapedur[4], color = "red", label = "scrapes", marker='o', linestyle = 'None')
+	p2 = ax1.plot(thumpdur[5], thumpdur[4], color = "green", label = "thumps", marker='o', linestyle = 'None')
+	p3 = ax1.plot(buzzdur[5], buzzdur[4], color = "blue", label = "buzzes", marker='o', linestyle = 'None')
 	# sets labels on plot axes
-	ax.set_xlabel('% of song at which feature begins')
-	ax.set_ylabel('Length of feature (s)')
+	ax1.set_xlabel('% of song at which feature begins')
+	ax1.set_ylabel('Length of feature (s)')
 	# sets up legend
 	plt.legend(loc='upper left', shadow=True, numpoints = 1)
-	#ax.legend([p2, p1, p3], ["scrapes", "thumps", "buzzes"], 2, numpoints = 1)
 	# sets axis limits
 	plt.xlim(0, 1)
 	plt.ylim(0, 10)
+	plt.title(plot_durs_title)
+	return ax1
+	lengthplot = ax2
 	# show plot
 	plt.show()
+	#return lengthplot
 
 def rates(readarray):
 	labelarray = []	
@@ -120,10 +134,17 @@ def rates(readarray):
 	readvar = 0
 	while readvar < readarray.shape[1]:
 		r_count_string = readarray[0, readvar]
-		labelarray.append( r_count_string.split('_')[0])
-		counts = float(r_count_string.split('_')[1])
+		try:
+			labelarray.append(r_count_string.split('_')[0])
+			counts = int(r_count_string.split('_')[1])
+		except:
+			tkMessageBox.showerror(
+			"Rates Function Error",
+			"There's a problem with generating rates from your annotation file.  Check documentation to fix.")
+			raise SystemExit	
+
 		countarray.append(counts)
-		# length of comonent
+		# length of component
 		lengtharray.append(float(readarray[4, readvar]))
 		# counts/second
 		rate = counts/float(readarray[4, readvar])
@@ -135,19 +156,17 @@ def rates(readarray):
 		percent = readarray[5, readvar]
 		percentarray.append(float(percent))
 		readvar = readvar + 1
-	#global srtot
 	# makes the final array that gets returned to whoever called the function
 	cfg.srtot = [labelarray, countarray, lengtharray, ratearray, midarray, percentarray]
-	ndsrtot = np.array(cfg.srtot)				
+	ndsrtot = np.array(cfg.srtot)	
 	return cfg.srtot
 
-def plot_rates(durarray):
-	import matplotlib.pyplot as plt
+def plot_rates(durarray, plot_rates_title):
 	# makes a figure of the rate data
-	fig = plt.figure(figsize=(5, 4))
-	ax = fig.add_subplot(1,1,1)
-	ax.set_xlabel('% of song at which feature begins')
-	ax.set_ylabel("Scrape Rate (scrapes/second)")
+	figrates = plt.figure(figsize=(5, 4))
+	ax1 = figrates.add_subplot(1,1,1)
+	ax1.set_xlabel('% of song at which feature begins')
+	ax1.set_ylabel("Scrape Rate (scrapes/second)")
 	x = durarray[5]
 	y = durarray[3]
 	ratefit = np.polyfit(x, y, 1)
@@ -157,16 +176,12 @@ def plot_rates(durarray):
 	plt.xlim(0, 1)
 	plt.ylim(min(y) - (.05 * min(y)), max(y) + (.10 * max(y)))
 	plt.legend(loc='upper center', shadow=True, numpoints = 1)
-	#plt.legend([p1, p2], ["scrape rate", "linear fit line"], 2, scatterpoints = 1)
+	plt.title(plot_rates_title)
+	plt.legend(loc='upper left', shadow=True, numpoints = 1)
 	plt.show()
 		
 def importwav(wavpath):
-	from scipy import signal
-	import matplotlib.pyplot as plt
-	from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
-	from scipy.io.wavfile import read,write
-	from numpy import sin, linspace, pi
-
+	
 	rate,data=read(wavpath)
 	cfg.rate = float(rate)
 	cfg.y=data
@@ -185,11 +200,6 @@ def importwav(wavpath):
 	return cfg.wavdata
 
 def getfreq(y, Fs, normal):
-	import scipy
-	import pylab
-	import math
-	from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
-	from scipy import fft, arange, ifft
 
 	# number of samples
 	n = len(y) 
@@ -214,7 +224,6 @@ def getfreq(y, Fs, normal):
 	cfg.Y = (cfg.Y/normal) * 100
 	cfg.Y = abs(cfg.Y)
 	
-	
 	p1 = plt.plot(cfg.frq,abs(cfg.Y),'r')
 	pylab.xscale('log')
 	pylab.xlim([0,4000])
@@ -224,16 +233,7 @@ def getfreq(y, Fs, normal):
 	return cfg.fft_dat
 
 def getpeaks(frq, Y, cutoff, plot_title):
-	from pypeaks import Data, Intervals
-	import pylab
-	import numpy.ma as ma
-	import numpy as np
-	from scipy import signal
-	import matplotlib.pyplot as plt
-	from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
-	from scipy import fft, arange, ifft
-	from numpy import sin, linspace, pi
-	from scipy.io.wavfile import read,write
+	
 	# first step of getting peaks
 	peaks_obj = Data(frq, Y, smoothness=20)
 	#second part of getting peaks
@@ -340,14 +340,14 @@ def getpeaks(frq, Y, cutoff, plot_title):
 	maxpeakstr = str(maxpeak) + " Hz"
 	p3 = plt.plot(finalpeaksx, finalpeaksy, linestyle = "none", marker = "o", color = "green")
 	plt.title(plot_title + " - max peak at: " + maxpeakstr)
-	plt.show()
+	#plt.show()
 	final_peaks = []
 	final_peaks = [finalpeaksx, finalpeaksy]
 	return final_peaks
 
 def featurefinder(lengths_output, featuretypestr, featureindex, wavdata, crop):
-	featuretype = cfg.featurekey[featuretypestr]
 
+	featuretype = cfg.featurekey[featuretypestr]
 	start = float(lengths_output[featuretype][1][featureindex])
 	end = float(lengths_output[featuretype][2][featureindex])
 	closestbegin =  np.searchsorted(wavdata[0],[start,],side='left')[0]
