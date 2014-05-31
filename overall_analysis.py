@@ -1,13 +1,33 @@
 #!/usr/bin/python
+
+"""
+Erin Brandt - 31/5/2013
+This function does several things.
+Input: (1) animal_info csv file that contains information not related to sound file itself (ie: animal size, weight, treatment, temperature, etc)
+(2) annotation files from each trial
+Process: (1) calculates the duration of each feature 
+(2)separates out scrape numbers from annotation file (see documentation for more detail)
+Output: 1 csv file per individual with all features and feature durations, scrape number (for scrape rate regions), and trial information
+This file is written into the folder that contains annotation information.  Use all_inds.py to compile these files for comparision across trials and individuals
+"""
+
+# to process annotation files, and wav data once it's enabled
 import maleviban as vib
+# holds variables that will be shared with maleviban
 import config as cfg
+# for displaying file/folder choosers and message boxes to user
 import Tkinter, Tkconstants, tkFileDialog, tkMessageBox
-import tkMessageBox
+# lets us do file and folder operations within the operating system of the user
 import os
+# lets us make plots
 import matplotlib.pyplot as plt
+# for numerical operations and numpy arrays
 import numpy as np
+# for reading/writing csv files
 import csv
+# lets us transpose arrays
 import itertools as it
+# gets current date and time for timestamp
 import datetime
 
 # get timestamp for files we'll save
@@ -45,7 +65,7 @@ while readvar < animal_info.shape[0]:
 ndtrialname = np.array(trialname)
 
 # gets the folder that contains all the annotation files.  Should be a directory (such as "data") that contains each individual, then trial underneath it.
-annotation_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/test/data", title = "Choose the folder that contains annotations")
+annotation_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/male_only/data", title = "Choose the folder that contains annotations")
 
 # asks the user if they want to do spectral analysis.  If so, asks user for folder where .wav files can be found.
 wav_load = tkMessageBox.askyesno("Spectral Analysis", "Do you want to load .wav files to do spectral analysis?")
@@ -53,7 +73,7 @@ if wav_load:
 	tkMessageBox.showerror(
 	"Frequency Information",
 	"We haven't written the frequency analysis yet.  Go directly to maleviban to get peak info.")
-# gets the folder that contains all the .wav files (if doing spectral analysis).  This should be commented out once spectral analysis algorithms are finalized.
+# gets the folder that contains all the .wav files (if doing spectral analysis).  This should be uncommented once spectral analysis algorithms are finalized.
 #if wav_load:
 #	wav_folder = tkFileDialog.askdirectory(initialdir = "/home/eebrandt/projects/temp_trials/test/data", title = "Choose the folder that contains .wav files")
 
@@ -72,28 +92,33 @@ for individual in individuals:
 		# loop to go through each individual
 		for trial in trials:
 			labelfilename =  annotation_folder +"/"+ individual + "/" + trial + "/" + trial + ".labels.txt"
+			# makes sure our "trial" is  a folder and that the folder contains a "labels.txt" file that we can load
 			if os.path.isdir(annotation_folder + "/" + individual + "/" + trial) and os.path.isfile(labelfilename):
 				trialindex = trialname.index(trial)
 				outputarray = []
+				# list to hold animal information (from the animal information file)
 				an_info = []
+				# adding data from the animal_info file to the array that will be written to the csv file eventually.
 				an_info.append(animal_info[trialindex]["tape"] + "-" + animal_info[trialindex][1])
 				an_info.append(animal_info[trialindex]["complete"])
 				an_info.append(animal_info[trialindex]["individual"])
 				an_info.append(animal_info[trialindex]["treatment"])
 				an_info.append(animal_info[trialindex]["rank"])
 				an_info.append(animal_info[trialindex]["date"])
+				# calculates temperature in celsius from the given temperature in farenheit
 				tempf = (float(animal_info[trialindex]["temp"]))
 				tempc = (tempf - 32) * 5.0/9.0
 				an_info.append(tempc)
 				an_info.append(animal_info[trialindex]["weight"])
 				an_info.append(animal_info[trialindex]["ceph_width"])
-
+				
+				# error checking mechanism to make sure the .labels.txt file is in the expected format
 				try:
 					vib.importanns(labelfilename)
 				except:
 					tkMessageBox.showerror(
            				"Annotation File Error",
-            				labelfilename + " doesn't look right. Look through the documentation to fix your file.")
+            				labelfilename + " doesn't look right, formatting-wise. Look through the documentation to fix your file.")
 					raise SystemExit
 
 				# runs the rate analysis.  Gives the user an error if there's something wrong with the file
@@ -112,8 +137,10 @@ for individual in individuals:
 					vib.plot_rates(cfg.srtot, trial)
 						
 				# compiling info. to put into a csv.
-				# makes an nparray the size and shape we need to eventually write the csv.  Note that this will make many empty spaces, since most of the data only have 
-				Maxlen = max(len(cfg.lengths_output[0][0]), len(cfg.lengths_output[1][0]), len(cfg.lengths_output[2][0]), len(cfg.lengths_output[3][0]), )
+				# makes an nparray the size and shape we need to eventually write the csv.  Note that this will make many empty spaces, since most of the data only have 1 row.
+				Maxlen = max(len(cfg.lengths_output[0][0]), len(cfg.lengths_output[1][0]), len(cfg.lengths_output[2][0]), len(cfg.lengths_output[3][0]),)
+				# this array is the key to this whole thing working properly.  It is an array with a pre-set number of columns,
+				# but the rows are pre-determined by the *longest* row that exists in the lengths_output array.
 				npoutput = np.zeros((19, Maxlen), dtype="S20")
 
 				readvar = 0
@@ -121,32 +148,40 @@ for individual in individuals:
 					npoutput[readvar][0] = str(an_info[readvar])
 					readvar = readvar + 1
 				readvar = 0
+				# at this point, we figure out how many scrapes, thumps, and buzzes there are, so we only 
+				# assign that number of rows in the npoutput column.  This will result in most cases in many
+				# empty rows per column.
 				lenscrape = len(cfg.lengths_output[0][5]) 
 				lenthump = len(cfg.lengths_output[1][5])
 				lenbuzz = len(cfg.lengths_output[2][5])
 				lensr = len(cfg.srtot[0])
+				
+				# this is where we actually assign all of our scrape, thump, and buzz values to the output array, based on how
+				# many of each there are.  We are specifically using the percent of song length of the midpoint of each feature,
+				# and its duration.  TODO: possibly clean this up with a loop?
 				npoutput[9][0:lenscrape] = cfg.lengths_output[0][5]
 				npoutput[10][0:lenscrape] = cfg.lengths_output[0][4]
 				npoutput[11][0:lenthump] = cfg.lengths_output[1][5]
 				npoutput[12][0:lenthump] = cfg.lengths_output[1][4]
 				npoutput[13][0:lenbuzz]	 = cfg.lengths_output[2][5]
 				npoutput[14][0:lenbuzz]  = cfg.lengths_output[2][4]
+				# writes the rate data.  This writes the number of scrapes, duration of scrape region, and number of scrapes
 				npoutput[15][0:lensr]  = cfg.srtot[5]
 				npoutput[16][0:lensr] = cfg.srtot[2]
 				npoutput[17][0:lensr] = cfg.srtot[1]
 				npoutput[18][0] = animal_info[trialindex][9]
 
-				# this will be the header for the csv file
+				# this will be the header for the csv file.  If something looks screwy with the resulting file, check here first
 				durations_output_header = ["tape-video", "complete?", "individual", "treatment", "rank", "date", "temperature (C)", "weight", "ct_width", "scrape_pos", "scrape_dur", "thump_pos", "thump_dur", "buzz_pos", "buzz_dur", "srate_pos", "srate_dur", "srate_num", "comments"]
-				# this zips our previous mess of an array so that we can have columns of unequal length	
+				# this transposes our previous mess of an array so that we can have columns of unequal length written into our csv	
 				zipoutput = list(it.izip_longest(*npoutput, fillvalue=''))
 				
-				# this bit writes the file. 
-				#fl = open(annotation_folder +"/"+ individual + "/" + trial + "/" + trial +"_" + "duration_data" + "_" + timestamp + '.csv', 'w')
-				#writer = csv.writer(fl)
-				#writer.writerow(durations_output_header)
-				#writer.writerows(zipoutput) 
-				#fl.close()   
+				# this bit writes the file. Comment it out if you want to check the functionality of the file without making csvs.
+				fl = open(annotation_folder +"/"+ individual + "/" + trial + "/" + trial +"_" + "duration_data" + "_" + timestamp + '.csv', 'w')
+				writer = csv.writer(fl)
+				writer.writerow(durations_output_header)
+				writer.writerows(zipoutput) 
+				fl.close()   
 
 				# handle frequency domain if the user requests it
 				# note that this is all commented out, just laid out in pseudocode for now

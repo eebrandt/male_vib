@@ -1,11 +1,26 @@
 #!/usr/bin/python
 
+"""
+Erin Brandt - 31/5/2013
+This function does several things.
+Input: .csv files of all individuals' duration information
+Process: (1) calculates average durations for each quartile of the song for each feature
+(2) Calculates scrape rates for each quartile of the song and overall
+Output: 1 csv file with information about each individual.  This only includes averages, so the source files should be retained
+for more detailed analysis of individual features
+"""
+
+# for moving around in folders
 import os
-import Tkinter, Tkconstants, tkFileDialog
-import tkMessageBox
+# for making file and folder dialog boxes and message boxes
+import Tkinter, Tkconstants, tkFileDialog, tkMessageBox
+# for getting the contents of a directory
 from os import listdir
+# for doing numerical calcuations and for making numpy arrays
 import numpy as np
+# for reading and writing csv files
 import csv
+# for getting current date and time for timestamp
 import datetime
 
 # gets a timestamp to identify data files
@@ -43,7 +58,6 @@ for individual in individuals:
 				# looks for all the csvs. in a trial folder
 				csvs = find_csv_filenames(trial_folder, suffix = ".csv")
 				# checks to make sure there is at least one csv file in the folder.  If not, moves to next one and alerts the user to this
-				# throws error if there are no csv files
 				if not csvs:
 					tkMessageBox.showinfo(
 					"Missing .csv file",
@@ -55,7 +69,7 @@ for individual in individuals:
 					creation_time.append(os.path.getmtime(trial_folder + "/" +  csv))
 				recent_time = max(creation_time)
 				max_index = creation_time.index(recent_time)
-				# file that we'll actually load
+				# csv file that we'll actually load
 				use_file = csvs[max_index]
 				# arguments that we'll use to open the folder.  Specifically: we're setting the data type for each column and naming each column.
 				kwargs = dict(delimiter=",",
@@ -64,20 +78,26 @@ for individual in individuals:
 					skip_header=1)
 				# load the data file once we know which is the proper one 
 				data_file = np.genfromtxt(trial_folder + "/" + use_file, **kwargs)
-				# get means for scrapes
-				overall_dur = 0
-				overall_count = 0
+				# list of feature types
 				feature_type = ["scrape", "thump", "buzz"]
+				# counts which feature we're on (could probably technically do this by finding index of feature_type)
 				feature_counter = 0
+				# gets overall averages for the entire song
 				allmeanfeatures = []
+				# this loop goes through each "feature type" (scrape, thump, and buzz) and figures out average duration of features for each quarter of the song plus and overall average
 				for feature in feature_type:
+					#holds durations for each quartile
 					quartile_durs = []
+					# holds the mean for each quartile
 					mean_quartile = []
+					# keeps track of which quartile we're on
 					quartile_count = 1
+					# holds average for the entire song
 					average_count = []
 					while quartile_count < 5:
 						readvar = 0
 						for item in data_file[feature + "_pos"]:
+							# check to make sure that there is a number here (not nan) and within quartile range.
 							if not np.isnan(item) and float(item) < (quartile_count * .25):
 								average_count.append(data_file[feature + "_dur"][readvar])
 								quartile_durs.append(data_file[feature +"_dur"][readvar])
@@ -88,33 +108,44 @@ for individual in individuals:
 						else:
 							mean_quartile.append(" ")	
 						quartile_count = quartile_count + 1
-					# also makes sure there's something in average_count, so we don't get weird errors
+					# also makes sure there's something in average_count, so we don't get weird errors.  Note that we add empty string if it doesn't have a number so things don't get appended over necessary blanks.
 					if average_count:
 						mean_quartile.append(np.mean(average_count))
 					else:
 						mean_quartile.append(" ")
 					allmeanfeatures.append(mean_quartile)
 					feature_counter = feature_counter + 1	
-				ratesquart = []
+				# this loop gets scrape rates for 1st, 2nd, 3rd, and 4th quartiles of the song.  It does this by creating a running total of time, and a running total of scrape number to get those averages (ie: it doesn't calculate each rate independently and then average them).
+				# variable to hold running total of time (durations)
+				overall_dur = 0
+				# variable to hold running total of scrape counts
+				overall_count = 0
+				# this makes a list that will hold all of the rate data (each quartile plus an overall average).  It is a fixed size (5) so that if one of them is empty (as often happens with buzzes), subsequent rates won't get appended over intended empty slots.
 				rates = [None] * 5
+				# counts the number of quartiles we go through (4)
 				quartile_count = 0
+				# this loop actually gets the rates for each quartile
 				while quartile_count < 5:
 					readvar = 0
 					sdur = 0
 					scount = 0
 					for item in data_file["srate_pos"]:
+						# this checks each "srate_pos" item to see if it's within the quartile range and also exists (not nan). If it's nan, it will throw an error but not break the program.  If everything looks ok, it adds to the scount and sdur running totals
 						if float(item) < (quartile_count * .25) and not np.isnan(item):
 							sdur = sdur + data_file["srate_dur"][readvar]
 							scount = scount + data_file["srate_num"][readvar]
 						readvar = readvar + 1
+					# this calculates the average.  First it makes sure neither scount or sdur are zero (to avoid division by zero errors) and then figures out the averages, which are then added to the rates list. Note that the overall_count and overall_dur variables get appended throughout all quartiles to give an overall average.
 					if float(scount) != 0 and float(sdur) != 0:
 						savg = float(scount)/float(sdur)
 						rates[quartile_count - 1] = savg
 						overall_dur = overall_dur + sdur
 						overall_count = overall_count + scount
 					quartile_count = quartile_count + 1
-				overall_avg = overall_count/overall_dur
-				rates[4] = overall_avg
+				#calculates the overall average, again checking for /0 errors and
+				if float(overall_count) != 0 and float(overall_dur) != 0:
+					overall_avg = overall_count/overall_dur
+					rates[4] = overall_avg
 				
 				# these two conditionals put empty string instead of nan if weight or ct is missing.  Easier for later import				
 				if data_file["weight"][0] == False:
@@ -127,8 +158,9 @@ for individual in individuals:
 				else:
 					ct = data_file["ct_width"][0]
 
-				# defines the row that we're going to write to the csv.  This part is messy, but not an easier way to do this, really
+				# defines the row that we're going to write to the csv.  
 				row = [data_file["video"][0], data_file["complete"][0], data_file["individual"][0], data_file["treatment"][0] , data_file["rank"][0], data_file["date"][0], data_file["temperature"][0], weight, ct, allmeanfeatures[0][0], allmeanfeatures[0][1], allmeanfeatures[0][2], allmeanfeatures[0][3], allmeanfeatures[0][4], allmeanfeatures[1][0], allmeanfeatures[1][1], allmeanfeatures[1][2], allmeanfeatures[1][3], allmeanfeatures[1][4], allmeanfeatures[2][0], allmeanfeatures[2][1], allmeanfeatures[2][2], allmeanfeatures[2][3], allmeanfeatures[2][4], rates[0], rates[1], rates[2], rates[3], rates[4]]
-
+				# writes the row, for each trial
 				writer.writerow(row) 
+# closes the csv writer
 fl.close() 

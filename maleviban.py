@@ -1,5 +1,9 @@
 #!/usr/bin/python
-
+"""
+Erin Brandt - 31/5/2013
+This module contains functions specifically to process duration, frequency, and rate data for male H. clypeatus songs.  
+TODO: fix up frequency aspects, comment frequency/fft/peakfinding parts.
+"""
 import numpy as np
 import scipy
 import math
@@ -25,7 +29,12 @@ from scipy.io.wavfile import read,write
 
 def importanns(wavpath):
 	"""
-    	This function opens a file containing duration information for vibratory song components.  It takes a path name (string), and outputs a numpy array that contains the following columns: component labels, component start times, component end times, component midpoints(useful for plotting components against total song length), length of component, percent of the total song at which the midpoint of a component occurs.
+    	description:This function opens a file containing duration information for vibratory song components.  It takes a path name (string), and outputs a numpy array that contains the following columns: component labels, component start times, component end times, component midpoints(useful for plotting components against total song length), length of component, percent of the total song at which the midpoint of a component occurs.
+	parameters: wavpath: a string containing the path of the annotation file
+	calculations: (1) determines the duration of each feature (2) determines the temporal position of each feature in the song.  
+	song length is normalized to 1 based on the distance between the first feature, and the last feature. note: scrape-rate information
+	needs to be handled elsehwere (the rates function).
+	returns: cfg.lengths_output: array containing all duration and temproal information for each feature. 
 	"""
 	# imports the label file with the specified path/file name
 	loadarray = np.array(np.loadtxt(open(wavpath),dtype = "string", delimiter = "\t,", skiprows = 0))
@@ -100,7 +109,10 @@ def importanns(wavpath):
 
 def plotlengths (scrapedur, thumpdur, buzzdur, plot_durs_title):
 	""" 
-	This function takes three arrays that contain duration info for scrapes, thumps, and buzzes.  It generates a scatterplot that plots the duration of a component over the total length of the song (length given in percent length)  This is a good quick visual check to make sure everything's working well.  It also gives a good indication of how song elements are distributed temporally.
+	description:This function takes three arrays that contain duration info for scrapes, thumps, and buzzes.  It generates a scatterplot that plots the duration of a component over the total length of the song (length given in percent length)  This is a good quick visual check to make sure everything's working well.  It also gives a good indication of how song elements are distributed temporally.
+	parameters: scrapedur: scrape duration and occurence data, thump duration and occurence data, buzz duration and occurence data, title 
+	for plot
+	returns: doesn't return anything, but generates plots
 	"""
 
 	figlengths = plt.figure(figsize=(5, 4))
@@ -124,6 +136,12 @@ def plotlengths (scrapedur, thumpdur, buzzdur, plot_durs_title):
 	#return lengthplot
 
 def rates(readarray):
+	"""
+	description: This function separates the rate count the annotation file and puts it in an array for later calculation
+	parameters: readarray: array that is output from importanns containing all duration information
+	calculations: splits out rate count and puts in its own column
+	returns: cfg.srtot: contains all duration and rate information for scrape_rate data
+	"""
 	labelarray = []	
 	countarray=[]
 	lengtharray = []
@@ -161,7 +179,13 @@ def rates(readarray):
 	return cfg.srtot
 
 def plot_rates(durarray, plot_rates_title):
-	# makes a figure of the rate data
+	"""
+	description: This function plots the average rate of scrapes over time (time being length of the song normalized to one).  It also
+	adds a linear fit line, just for funsies.
+	parameters: duararray: array containing the scrape rates, and positions of each of these, plot_rates_title: name of the individual for 
+	display on the plot's title.
+	returns: doesn't return anything, but generates plot.
+	"""
 	figrates = plt.figure(figsize=(5, 4))
 	ax1 = figrates.add_subplot(1,1,1)
 	ax1.set_xlabel('% of song at which feature begins')
@@ -169,6 +193,7 @@ def plot_rates(durarray, plot_rates_title):
 	x = durarray[5]
 	y = durarray[3]
 	ratefit = np.polyfit(x, y, 1)
+	# makes a linear fit line
 	yfit = np.polyval(ratefit, x)
 	p1 = plt.plot(x, y, color = "red", marker='o', linestyle = 'None', label = 'scrape rates')
 	p2 = plt.plot(x, yfit, label = 'linear fit line')
@@ -180,6 +205,12 @@ def plot_rates(durarray, plot_rates_title):
 	plt.show()
 		
 def importwav(wavpath):
+	""" 
+	description: this function reads in a wav file existing at a give path and converts it into an x/y series of points by dividing each
+	number by the sampling rate
+	parameters: wavpath: the path name of the .wav file
+	returns: cfg.wavdata, which is an x, y list of all the points in the .wav file, with y being amplitude and x being time.
+	"""
 	
 	rate,data=read(wavpath)
 	cfg.rate = float(rate)
@@ -199,7 +230,12 @@ def importwav(wavpath):
 	return cfg.wavdata
 
 def getfreq(y, Fs, normal):
-
+	"""
+	Performs an fft of an array that has been broken down into x, y domains by the importwav function.
+	parameters: y: y-values of a wav file, Fs: sampling rate of wav file, normal: normaliziation number.  This sets the number you'll use
+	to set the db for the fft.
+	returns: cfg.fft_dat: a 2-column array that contains the frequency and amplitude (fft plot) to feed into the find_peaks def. 
+	"""
 	# number of samples
 	n = len(y) 
 	k = arange(n)
@@ -232,6 +268,9 @@ def getfreq(y, Fs, normal):
 	return cfg.fft_dat
 
 def getpeaks(frq, Y, cutoff, plot_title):
+	"""
+	This is used to find peaks in an fft.  It is unfinished and will be further commented when done
+	"""
 	
 	# first step of getting peaks
 	peaks_obj = Data(frq, Y, smoothness=20)
@@ -345,6 +384,10 @@ def getpeaks(frq, Y, cutoff, plot_title):
 	return final_peaks
 
 def featurefinder(lengths_output, featuretypestr, featureindex, wavdata, crop):
+	"""
+	This function is used to find a particular region of a wav file for further analysis (usually fft and peak-finding).
+	Description will be fleshed out when the frequency functions are clarified.
+	"""
 
 	featuretype = cfg.featurekey[featuretypestr]
 	start = float(lengths_output[featuretype][1][featureindex])
@@ -359,9 +402,9 @@ def featurefinder(lengths_output, featuretypestr, featureindex, wavdata, crop):
 	feature_whole = [wavdata[0][closestbegin:closestend], wavdata[1][closestbegin:closestend]]
 	feature_buzz = [wavdata[0][closestbegin_cr:closestend_cr], wavdata[1][closestbegin_cr:closestend_cr]]
 	cfg.feature = [feature_whole, feature_buzz]
-	#print cfg.feature
 	return cfg.feature	
 
+# this stuff is here to test the peak-finding portion of this module.
 #wavpath = "/home/eebrandt/projects/temp_trials/test/buzz.wav"
 #importwav(wavpath)
 #featurefinder(lengths_output[2][3],wavdata, .25)
