@@ -43,9 +43,10 @@ for individual in individuals:
 				# looks for all the csvs. in a trial folder
 				csvs = find_csv_filenames(trial_folder, suffix = ".csv")
 				# checks to make sure there is at least one csv file in the folder.  If not, moves to next one and alerts the user to this
+				# throws error if there are no csv files
 				if not csvs:
 					tkMessageBox.showinfo(
-					"Missing csv file",
+					"Missing .csv file",
 					"Duration file for " + trial + " was not found.  Moving to next one")
 					break
 				creation_time = []
