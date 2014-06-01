@@ -32,7 +32,7 @@ def find_csv_filenames(path_to_dir, suffix=".csv"):
 	return [ filename for filename in filenames if filename.endswith(suffix)]
 
 # Asks user for data folder.  Should be the same as "annotation_folder" for overall_analysis.py
-data_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/test/data/male_only", title = "Choose the folder that contains data files.")
+data_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/male_only/data", title = "Choose the folder that contains data files.")
 
 # Defines the header for the .csv file we're going to make
 durations_output_header = ["tape_video", "complete", "individual", "treatment" , "rank", "date", "temperature", "weight", "ct_width", "scrape_q1", "scrape_q2", "scrape_q3", "scrape_q4", "scrape_avg", "thump_q1", "thump_q2", "thump_q3", "thump_q4", "thump_avg", "buzz_q1", "buzz_q2", "buzz_q3", "buzz_q4","buzz_avg", "srates_q1", "srates_q2", "srates_q3", "srates_q4", "srates_avg"]

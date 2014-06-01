@@ -65,7 +65,7 @@ while readvar < animal_info.shape[0]:
 ndtrialname = np.array(trialname)
 
 # gets the folder that contains all the annotation files.  Should be a directory (such as "data") that contains each individual, then trial underneath it.
-annotation_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/male_only/data", title = "Choose the folder that contains annotations")
+annotation_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/male_only/data/", title = "Choose the folder that contains annotations")
 
 # asks the user if they want to do spectral analysis.  If so, asks user for folder where .wav files can be found.
 wav_load = tkMessageBox.askyesno("Spectral Analysis", "Do you want to load .wav files to do spectral analysis?")
@@ -128,7 +128,8 @@ for individual in individuals:
 					tkMessageBox.showerror(
 					"Rate Error",
 					"Something about " + labelfilename + " is making rates not work.  See documentation to fix.")
-					raise SystemExit
+					print "Something about " + labelfilename + " is making rates not work.  See documentation to fix."
+					break
 
 				#shows duration and rate plots if the user requested them
 				if duration_plots:

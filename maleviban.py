@@ -22,10 +22,6 @@ from numpy import sin, linspace, pi
 #from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
 from scipy import fft, arange, ifft, signal, fft, arange, ifft
 from pypeaks import Data, Intervals
-from numpy import sin, linspace, pi
-from scipy.io.wavfile import read,write
-
-
 
 def importanns(wavpath):
 	"""
