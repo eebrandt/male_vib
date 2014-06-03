@@ -135,17 +135,22 @@ for individual in individuals:
 					scount = 0.0
 					for item in data_file["srate_pos"]:
 						# this checks each "srate_pos" item to see if it's within the quartile range and also exists (not nan). If it's nan, it will throw an error but not break the program.  If everything looks ok, it adds to the scount and sdur running totals
-						if float(item) < (quartile_count * .25) and not np.isnan(item):
+						if not np.isnan(item) and  (quartile_count * .25) > float(item) > ((quartile_count * .25) - .25):
 							sdur = sdur + data_file["srate_dur"][readvar]
 							scount = scount + data_file["srate_num"][readvar]
 						readvar = readvar + 1
 					# this calculates the average.  First it makes sure neither scount or sdur are zero (to avoid division by zero errors) and then figures out the averages, which are then added to the rates list. Note that the overall_count and overall_dur variables get appended throughout all quartiles to give an overall average.
+					savg = 0.0
 					if float(scount) != 0 and float(sdur) != 0:
-						savg = float(scount)/float(sdur)
-						rates[quartile_count - 1] = savg
+						savg = round(float(scount)/float(sdur),7)
+						rates[quartile_count -1] = savg
 						overall_dur = overall_dur + sdur
 						overall_count = overall_count + scount
+					else:
+						rates[quartile_count -1] = ""
+
 					quartile_count = quartile_count + 1
+					
 				#calculates the overall average, again checking for /0 errors and
 				if float(overall_count) != 0 and float(overall_dur) != 0:
 					overall_avg = overall_count/overall_dur
@@ -163,7 +168,7 @@ for individual in individuals:
 					ct = data_file["ct_width"][0]
 
 				# defines the row that we're going to write to the csv.  
-				row = [data_file["video"][0], data_file["complete"][0], data_file["individual"][0], data_file["treatment"][0] , data_file["rank"][0], data_file["date"][0], data_file["temperature"][0], weight, ct, allmeanfeatures[0][0], allmeanfeatures[0][1], allmeanfeatures[0][2], allmeanfeatures[0][3], allmeanfeatures[0][4], allmeanfeatures[1][0], allmeanfeatures[1][1], allmeanfeatures[1][2], allmeanfeatures[1][3], allmeanfeatures[1][4], allmeanfeatures[2][0], allmeanfeatures[2][1], allmeanfeatures[2][2], allmeanfeatures[2][3], allmeanfeatures[2][4], round(rates[0], 7), round(rates[1], 7), round(rates[2], 7), round(rates[3],7), round(rates[4], 7)]
+				row = [data_file["video"][0], data_file["complete"][0], data_file["individual"][0], data_file["treatment"][0] , data_file["rank"][0], data_file["date"][0], data_file["temperature"][0], weight, ct, allmeanfeatures[0][0], allmeanfeatures[0][1], allmeanfeatures[0][2], allmeanfeatures[0][3], allmeanfeatures[0][4], allmeanfeatures[1][0], allmeanfeatures[1][1], allmeanfeatures[1][2], allmeanfeatures[1][3], allmeanfeatures[1][4], allmeanfeatures[2][0], allmeanfeatures[2][1], allmeanfeatures[2][2], allmeanfeatures[2][3], allmeanfeatures[2][4], rates[0], rates[1], rates[2], rates[3], rates[4]]
 				# writes the row, for each trial
 				writer.writerow(row) 
 # closes the csv writer
