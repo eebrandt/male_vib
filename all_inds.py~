@@ -32,7 +32,7 @@ def find_csv_filenames(path_to_dir, suffix=".csv"):
 	return [ filename for filename in filenames if filename.endswith(suffix)]
 
 # Asks user for data folder.  Should be the same as "annotation_folder" for overall_analysis.py
-data_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/test/data/male_only", title = "Choose the folder that contains data files.")
+data_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/male_only/data", title = "Choose the folder that contains data files.")
 
 # Defines the header for the .csv file we're going to make
 durations_output_header = ["tape_video", "complete", "individual", "treatment" , "rank", "date", "temperature", "weight", "ct_width", "scrape_q1", "scrape_q2", "scrape_q3", "scrape_q4", "scrape_avg", "thump_q1", "thump_q2", "thump_q3", "thump_q4", "thump_avg", "buzz_q1", "buzz_q2", "buzz_q3", "buzz_q4","buzz_avg", "srates_q1", "srates_q2", "srates_q3", "srates_q4", "srates_avg"]
@@ -62,6 +62,7 @@ for individual in individuals:
 					tkMessageBox.showinfo(
 					"Missing .csv file",
 					"Duration file for " + trial + " was not found.  Moving to next one")
+					print "Duration file for " + trial + " was not found.  Moving to next one"
 					break
 				creation_time = []
 				# gets creation time for each file, so we only use the most recent one				
@@ -85,29 +86,43 @@ for individual in individuals:
 				# gets overall averages for the entire song
 				allmeanfeatures = []
 				# this loop goes through each "feature type" (scrape, thump, and buzz) and figures out average duration of features for each quarter of the song plus and overall average
+				
 				for feature in feature_type:
+					# holds average for the entire song
+					average_count = []
 					#holds durations for each quartile
-					quartile_durs = []
-					# holds the mean for each quartile
 					mean_quartile = []
 					# keeps track of which quartile we're on
 					quartile_count = 1
-					# holds average for the entire song
-					average_count = []
+					
 					while quartile_count < 5:
+						quartile_durs = []
+						quartile_durs
+						# holds the mean for each quartile
 						readvar = 0
 						for item in data_file[feature + "_pos"]:
+							#print (quartile_count * .25) < float(item) < (quartile_count * .)
+							#print quartile_count * .25
+							#print quartile_count * .25 - .25
 							# check to make sure that there is a number here (not nan) and within quartile range.
-							if not np.isnan(item) and float(item) < (quartile_count * .25):
+							#print (quartile_count * .25) < float(item) < ((quartile_count * .25) - .25)
+							if not np.isnan(item) and  (quartile_count * .25) > float(item) > ((quartile_count * .25) - .25):
 								average_count.append(data_file[feature + "_dur"][readvar])
+								#print average_count
 								quartile_durs.append(data_file[feature +"_dur"][readvar])
+								#print quartile_durs
 							readvar = readvar + 1
 						# makes sure there's something in the quartile_durs array.  It will throw an error (but not abort the program) if this isn't included
 						if quartile_durs:
 							mean_quartile.append(np.mean(quartile_durs))
 						else:
-							mean_quartile.append(" ")	
+							mean_quartile.append(" ")
+						#print quartile_durs	
+						#print trial
+						#print feature
+						#print quartile_count
 						quartile_count = quartile_count + 1
+						#quartile_durs = []
 					# also makes sure there's something in average_count, so we don't get weird errors.  Note that we add empty string if it doesn't have a number so things don't get appended over necessary blanks.
 					if average_count:
 						mean_quartile.append(np.mean(average_count))
@@ -117,18 +132,18 @@ for individual in individuals:
 					feature_counter = feature_counter + 1	
 				# this loop gets scrape rates for 1st, 2nd, 3rd, and 4th quartiles of the song.  It does this by creating a running total of time, and a running total of scrape number to get those averages (ie: it doesn't calculate each rate independently and then average them).
 				# variable to hold running total of time (durations)
-				overall_dur = 0
+				overall_dur = 0.0
 				# variable to hold running total of scrape counts
-				overall_count = 0
+				overall_count = 0.0
 				# this makes a list that will hold all of the rate data (each quartile plus an overall average).  It is a fixed size (5) so that if one of them is empty (as often happens with buzzes), subsequent rates won't get appended over intended empty slots.
-				rates = [None] * 5
+				rates = [0.0] * 5
 				# counts the number of quartiles we go through (4)
 				quartile_count = 0
 				# this loop actually gets the rates for each quartile
 				while quartile_count < 5:
-					readvar = 0
-					sdur = 0
-					scount = 0
+					readvar = 0.0
+					sdur = 0.0
+					scount = 0.0
 					for item in data_file["srate_pos"]:
 						# this checks each "srate_pos" item to see if it's within the quartile range and also exists (not nan). If it's nan, it will throw an error but not break the program.  If everything looks ok, it adds to the scount and sdur running totals
 						if float(item) < (quartile_count * .25) and not np.isnan(item):
@@ -159,7 +174,7 @@ for individual in individuals:
 					ct = data_file["ct_width"][0]
 
 				# defines the row that we're going to write to the csv.  
-				row = [data_file["video"][0], data_file["complete"][0], data_file["individual"][0], data_file["treatment"][0] , data_file["rank"][0], data_file["date"][0], data_file["temperature"][0], weight, ct, allmeanfeatures[0][0], allmeanfeatures[0][1], allmeanfeatures[0][2], allmeanfeatures[0][3], allmeanfeatures[0][4], allmeanfeatures[1][0], allmeanfeatures[1][1], allmeanfeatures[1][2], allmeanfeatures[1][3], allmeanfeatures[1][4], allmeanfeatures[2][0], allmeanfeatures[2][1], allmeanfeatures[2][2], allmeanfeatures[2][3], allmeanfeatures[2][4], rates[0], rates[1], rates[2], rates[3], rates[4]]
+				row = [data_file["video"][0], data_file["complete"][0], data_file["individual"][0], data_file["treatment"][0] , data_file["rank"][0], data_file["date"][0], data_file["temperature"][0], weight, ct, allmeanfeatures[0][0], allmeanfeatures[0][1], allmeanfeatures[0][2], allmeanfeatures[0][3], allmeanfeatures[0][4], allmeanfeatures[1][0], allmeanfeatures[1][1], allmeanfeatures[1][2], allmeanfeatures[1][3], allmeanfeatures[1][4], allmeanfeatures[2][0], allmeanfeatures[2][1], allmeanfeatures[2][2], allmeanfeatures[2][3], allmeanfeatures[2][4], round(rates[0], 7), round(rates[1], 7), round(rates[2], 7), round(rates[3],7), round(rates[4], 7)]
 				# writes the row, for each trial
 				writer.writerow(row) 
 # closes the csv writer
