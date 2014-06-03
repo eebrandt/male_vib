@@ -141,7 +141,6 @@ for individual in individuals:
 						readvar = readvar + 1
 					# this calculates the average.  First it makes sure neither scount or sdur are zero (to avoid division by zero errors) and then figures out the averages, which are then added to the rates list. Note that the overall_count and overall_dur variables get appended throughout all quartiles to give an overall average.
 					savg = 0.0
-					print float(scount) !=0 and float(sdur) !=0
 					if float(scount) != 0 and float(sdur) != 0:
 						savg = round(float(scount)/float(sdur),7)
 						rates[quartile_count -1] = savg
@@ -151,7 +150,6 @@ for individual in individuals:
 						rates[quartile_count -1] = ""
 
 					quartile_count = quartile_count + 1
-					print savg
 					
 				#calculates the overall average, again checking for /0 errors and
 				if float(overall_count) != 0 and float(overall_dur) != 0:

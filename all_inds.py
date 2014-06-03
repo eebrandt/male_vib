@@ -144,17 +144,19 @@ for individual in individuals:
 					if float(scount) != 0 and float(sdur) != 0:
 						savg = round(float(scount)/float(sdur),7)
 						rates[quartile_count -1] = savg
-						overall_dur = overall_dur + sdur
-						overall_count = overall_count + scount
+						overall_dur = float(overall_dur + sdur)
+						overall_count = float(overall_count + scount)
 					else:
 						rates[quartile_count -1] = ""
 
 					quartile_count = quartile_count + 1
 					
 				#calculates the overall average, again checking for /0 errors and
-				if float(overall_count) != 0 and float(overall_dur) != 0:
+				if overall_count != 0 and overall_dur != 0:
 					overall_avg = overall_count/overall_dur
-					rates[4] = overall_avg
+					rates[4] = round(overall_avg, 7)
+				else:
+					rates[4] = ""
 				
 				# these two conditionals put empty string instead of nan if weight or ct is missing.  Easier for later import				
 				if data_file["weight"][0] == False:
