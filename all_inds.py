@@ -97,7 +97,7 @@ for individual in individuals:
 					
 					while quartile_count < 5:
 						quartile_durs = []
-						quartile_durs
+						#quartile_durs = 0.0
 						# holds the mean for each quartile
 						readvar = 0
 						for item in data_file[feature + "_pos"]:
@@ -159,13 +159,37 @@ for individual in individuals:
 					rates[4] = ""
 				
 				# these two conditionals put empty string instead of nan if weight or ct is missing.  Easier for later import				
+
+				# do buzz stuff here
+				mean_buzz_quartile = []
+				# keeps track of which quartile we're on
+				quartile_count = 1
+				
+				while quartile_count < 5:
+					quartile_peak = []
+					#quartile_durs 
+					# holds the mean for each quartile
+					readvar = 0
+					for item in data_file[buzz + "_freq"]:
+						# check to make sure that there is a number here (not nan) and within quartile range.
+						if not np.isnan(item) and  (quartile_count * .25) > float(item) > ((quartile_count * .25) - .25):							average_count.append(data_file[feature + "_dur"][readvar])
+							quartile_durs.append(data_file[feature +"_dur"][readvar])
+						readvar = readvar + 1
+					# makes sure there's something in the quartile_durs array.  It will throw an error (but not abort the program) if this isn't included
+					if quartile_durs:
+						mean_quartile.append(np.mean(quartile_durs))
+					else:
+						mean_quartile.append(" ")
+					quartile_count = quartile_count + 1
+
+				
 				if data_file["weight"][0] == False:
-					weight = " "
+					weight = ""
 				else:
 					weight = data_file["weight"][0]
 
 				if data_file["ct_width"][0] == False:
-					ct = " "
+					ct = ""
 				else:
 					ct = data_file["ct_width"][0]
 

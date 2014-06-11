@@ -7,7 +7,8 @@ Input: (1) animal_info csv file that contains information not related to sound f
 (2) annotation files from each trial
 Process: (1) calculates the duration of each feature 
 (2)separates out scrape numbers from annotation file (see documentation for more detail)
-Output: 1 csv file per individual with all features and feature durations, scrape number (for scrape rate regions), and trial information
+(3)gets peak frequency from each buzz
+Output: 1 csv file per individual with all features and feature durations, scrape number (for scrape rate regions), buzz peak frequencies and trial information
 This file is written into the folder that contains annotation information.  Use all_inds.py to compile these files for comparision across trials and individuals
 """
 
@@ -55,6 +56,19 @@ except:
         "Something is wrong with your animal information file.  Check documentation to fix your file.")
 	raise SystemExit
 
+# gets the folder that contains all the annotation files.  Should be a directory (such as "data") that contains each individual, then trial underneath it.
+annotation_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/male_only/data/", title = "Choose the folder that contains annotations")
+
+# asks the user if they want to see duration and rate plots
+duration_plots =  tkMessageBox.askyesno("Duration Plots", "Do you want to view duration plots?")
+rate_plots = tkMessageBox.askyesno("Rate Plots", "Do you want to view scrape rate plots?")
+
+# asks the user if they want to import wav files to do spectral analysis.  If so, lets them decide whether they will view spectral plot graphs.
+wav_load = tkMessageBox.askyesno("Spectral Analysis", "Do you want to load .wav files to do spectral analysis?")
+if wav_load:
+	wav_folder = tkFileDialog.askdirectory(initialdir = "/media/eebrandt/Erin1/Erin_Berkeley/male_temp_vids/", title = "Choose the folder that contains .wav files")
+	plotwav = tkMessageBox.askyesno("Peak Graphs", "Do you want to see plots showing spectra and peaks?")
+
 # sets up an array so we can search through animal_info to find the individuals we're analyzing in our annotation files
 trialname = []
 readvar = 1
@@ -64,22 +78,7 @@ while readvar < animal_info.shape[0]:
 	readvar = readvar + 1
 ndtrialname = np.array(trialname)
 
-# gets the folder that contains all the annotation files.  Should be a directory (such as "data") that contains each individual, then trial underneath it.
-annotation_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/male_only/data/", title = "Choose the folder that contains annotations")
 
-# asks the user if they want to do spectral analysis.  If so, asks user for folder where .wav files can be found.
-wav_load = tkMessageBox.askyesno("Spectral Analysis", "Do you want to load .wav files to do spectral analysis?")
-if wav_load:
-	tkMessageBox.showerror(
-	"Frequency Information",
-	"We haven't written the frequency analysis yet.  Go directly to maleviban to get peak info.")
-# gets the folder that contains all the .wav files (if doing spectral analysis).  This should be uncommented once spectral analysis algorithms are finalized.
-#if wav_load:
-#	wav_folder = tkFileDialog.askdirectory(initialdir = "/home/eebrandt/projects/temp_trials/test/data", title = "Choose the folder that contains .wav files")
-
-
-duration_plots =  tkMessageBox.askyesno("Duration Plots", "Do you want to view duration plots?")
-rate_plots = tkMessageBox.askyesno("Rate Plots", "Do you want to view scrape rate plots?")
 
 # gets the indivudals based on everything that's in the top-level folder (folders and files)
 individuals =  os.listdir(annotation_folder)
@@ -130,8 +129,51 @@ for individual in individuals:
 					"Something about " + labelfilename + " is making rates not work.  See documentation to fix.")
 					print "Something about " + labelfilename + " is making rates not work.  See documentation to fix."
 					break
+				# at this point, we figure out how many scrapes, thumps, and buzzes there are, so we only 
+				# assign that number of rows in the npoutput column.  This will result in most cases in many
+				# empty rows per column.
 
-				#shows duration and rate plots if the user requested them
+				lenscrape = len(cfg.lengths_output[0][5]) 
+				lenthump = len(cfg.lengths_output[1][5])
+				lenbuzz = len(cfg.lengths_output[2][5])
+				lensr = len(cfg.srtot[0])
+				
+				
+				# runs frequency analysis if the user requests (for now we're just looking for max. peaks in buzzes peaks)
+				if wav_load:
+					wavpath = wav_folder + "/" + individual + "/" + trial + ".wav"
+					print wavpath
+					# opens wav file, puts it in array
+					vib.importwav(wavpath)
+					# variable to loop through buzzes
+					readvar = 0
+					# 
+					peakarray = np.zeros((2, lenbuzz))
+					while readvar < lenbuzz:
+						print str(trial) + " buzz " + str(readvar + 1)
+						# picks out each feature from the wav array and loads it so we can analyze that part of the song
+						vib.featurefinder(cfg.lengths_output, "buzz", readvar, cfg.wavdata, .25)
+						print "featurefinder complete"
+						# performs fft on a given buzz
+						vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
+						print "getfreq complete"
+						# performs peak analysis
+						vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .10, str(trial) + " buzz " + str(readvar + 1), plotwav)
+						print "getpeaks complete"
+					
+						# if there's only one peak, we don't have to find the max; just write it to the array as-is
+						if cfg.final_peaks.shape[1] == 1:
+							peakarray[0][readvar] = cfg.final_peaks[0]
+							peakarray[1][readvar] = cfg.final_peaks[1]
+						else:
+							peakarray[0][readvar] = max(cfg.final_peaks[0])
+							maxindex = np.nonzero(cfg.final_peaks[0] == max(cfg.final_peaks[0]))[0][0]
+							peakarray[1][readvar] = cfg.final_peaks[1][maxindex]
+						readvar = readvar + 1
+					print peakarray
+				else:
+					peakarray = ["", ""]
+
 				if duration_plots:
 					vib.plotlengths(cfg.lengths_output[0], cfg.lengths_output[1], cfg.lengths_output[2], trial)
 				if rate_plots:
@@ -142,20 +184,13 @@ for individual in individuals:
 				Maxlen = max(len(cfg.lengths_output[0][0]), len(cfg.lengths_output[1][0]), len(cfg.lengths_output[2][0]), len(cfg.lengths_output[3][0]),)
 				# this array is the key to this whole thing working properly.  It is an array with a pre-set number of columns,
 				# but the rows are pre-determined by the *longest* row that exists in the lengths_output array.
-				npoutput = np.zeros((19, Maxlen), dtype="S20")
+				npoutput = np.zeros((22, Maxlen), dtype="S20")
 
 				readvar = 0
 				while readvar < 9:
 					npoutput[readvar][0] = str(an_info[readvar])
 					readvar = readvar + 1
 				readvar = 0
-				# at this point, we figure out how many scrapes, thumps, and buzzes there are, so we only 
-				# assign that number of rows in the npoutput column.  This will result in most cases in many
-				# empty rows per column.
-				lenscrape = len(cfg.lengths_output[0][5]) 
-				lenthump = len(cfg.lengths_output[1][5])
-				lenbuzz = len(cfg.lengths_output[2][5])
-				lensr = len(cfg.srtot[0])
 				
 				# this is where we actually assign all of our scrape, thump, and buzz values to the output array, based on how
 				# many of each there are.  We are specifically using the percent of song length of the midpoint of each feature,
@@ -170,25 +205,27 @@ for individual in individuals:
 				npoutput[15][0:lensr]  = cfg.srtot[5]
 				npoutput[16][0:lensr] = cfg.srtot[2]
 				npoutput[17][0:lensr] = cfg.srtot[1]
-				npoutput[18][0] = animal_info[trialindex][9]
+				npoutput[18][0:lenbuzz] = peakarray[0]
+				npoutput[19][0:lenbuzz] = peakarray[1]
+				npoutput[20][0] = animal_info[trialindex]["comments"]
 
 				# this will be the header for the csv file.  If something looks screwy with the resulting file, check here first
-				durations_output_header = ["tape-video", "complete?", "individual", "treatment", "rank", "date", "temperature (C)", "weight", "ct_width", "scrape_pos", "scrape_dur", "thump_pos", "thump_dur", "buzz_pos", "buzz_dur", "srate_pos", "srate_dur", "srate_num", "comments"]
+				durations_output_header = ["tape-video", "complete?", "individual", "treatment", "rank", "date", "temperature (C)", "weight", "ct_width", "scrape_pos", "scrape_dur", "thump_pos", "thump_dur", "buzz_pos", "buzz_dur", "srate_pos", "srate_dur", "srate_num", "buzz_freq", "buzz_peak", "comments"]
 				# this transposes our previous mess of an array so that we can have columns of unequal length written into our csv	
 				zipoutput = list(it.izip_longest(*npoutput, fillvalue=''))
+				#print zipoutput
 				
 				# this bit writes the file. Comment it out if you want to check the functionality of the file without making csvs.
 				fl = open(annotation_folder +"/"+ individual + "/" + trial + "/" + trial +"_" + "duration_data" + "_" + timestamp + '.csv', 'w')
 				writer = csv.writer(fl)
 				writer.writerow(durations_output_header)
 				writer.writerows(zipoutput) 
-				fl.close()   
+				fl.close()  
 
-				# handle frequency domain if the user requests it
-				# note that this is all commented out, just laid out in pseudocode for now
-				
-		
-					#run importwav
+
+
+
+					#vib.importwav
 					#wavpath = wav_folder + "/" + individual + "/" + trial + ".wav"
 					#print wavpath
 					#vib.importwav(wavpath)
@@ -196,15 +233,15 @@ for individual in individuals:
 						# for each feature
 							# run featurefinder
 							# vib.featurefinder(cfg.lengths_output, "buzz", 1, cfg.wavdata, .25)
-							#vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
+							# vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
 							# run getpeaks
 							# vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .02, trial + " buzz 2")
 							# show peaks, get confirmation that they're ok
 							# threshold (to add later)
 							# append buzz, thump or scrape array with peak, threshold info 
 			
-					# get pertinent info. (treatment, temp, date, weight, ct length) from other .csv file
 					# *** export summary stats into one export file with summary info
 					# *** export file that has x, y for time domain
 					# *** export file that has x, y for frequency domain
-			
+
+				#shows duration and rate plots if the user requested them

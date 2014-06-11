@@ -255,15 +255,15 @@ def getfreq(y, Fs, normal):
 	cfg.Y = (cfg.Y/normal) * 100
 	cfg.Y = abs(cfg.Y)
 	
-	p1 = plt.plot(cfg.frq,abs(cfg.Y),'r')
-	pylab.xscale('log')
-	pylab.xlim([0,4000])
-	pylab.ylim([0,max(abs(cfg.Y))])
+	#p1 = plt.plot(cfg.frq,abs(cfg.Y),'r')
+	#pylab.xscale('log')
+	#pylab.xlim([0,4000])
+	#pylab.ylim([0,max(abs(cfg.Y))])
 	#show()	
 	cfg.fft_dat = [cfg.frq, cfg.Y]
 	return cfg.fft_dat
 
-def getpeaks(frq, Y, cutoff, plot_title):
+def getpeaks(frq, Y, cutoff, plot_title, showplot):
 	"""
 	This is used to find peaks in an fft.  It is unfinished and will be further commented when done
 	"""
@@ -277,12 +277,7 @@ def getpeaks(frq, Y, cutoff, plot_title):
 	#plt.show()
 
 	peaks = peaks_obj.peaks["peaks"]
-	#print peaks
 
-	#peakplot = peaks_obj.plot()
-	
-	#p3 = plt.plot(peaks)
-	#show()
 	peaksnp = np.zeros((2, len(peaks[0])))
 	peaksnp[0] = peaks[0]
 	peaksnp[1] = peaks[1] 
@@ -312,72 +307,73 @@ def getpeaks(frq, Y, cutoff, plot_title):
 	filter1_peaks = np.array(filteredpeaks)
 	filter1_peaksy = []
 	absY = abs(Y)
-	# Y
-	#print absY
+
 	readvar = 0
-	#print len(filter1_peaks[1])
 	while readvar < len(filter1_peaks[1]):
 		ypeak = np.searchsorted(frq,[filter1_peaks[0][readvar,]],side='left')[0]
 		filter1_peaksy.append(absY[ypeak])
 		readvar = readvar + 1
-
-	p1 = plt.plot(frq,abs(Y),'r') # plotting the spectrum
-	#abs(Y)
-	p2 = plt.plot(filter1_peaks[0], filter1_peaksy, linestyle = "none", marker = "o", color = "black")
-	pylab.xlim([0,500])
-	pylab.ylim([0,400])
-	xlabel('Freq (Hz)')
-	ylabel('|Y(freq)|')
-	#plt.show()
-	#print filter1_peaks
-	
 	# second filtering step.  Judders peaks back and forth along the x-axis of the frequency plot until they reach the true local max (y)
 	rangeleft_arr = []
 	rangeright_arr = []
-	readvar = 0
-	#print filter1_peaks
-	while readvar < len(filter1_peaks[0]):
-		# figure out the x-distance to the next closest peak, then 
-		if readvar == 0:
-			xdist =  abs(filter1_peaks[0][readvar +1] - filter1_peaks[0][readvar])
-			 
-		elif readvar == len(filter1_peaks[0]) - 1:
-			xdist = abs(filter1_peaks[0][readvar - 1] - filter1_peaks[0][readvar])
-		else:
-			distright = abs(filter1_peaks[0][readvar +1] - filter1_peaks[0][readvar])
-			distleft = abs(filter1_peaks[0][readvar - 1] - filter1_peaks[0][readvar])
-			xdist = min(distright, distleft)
-
-		xdist2 = xdist/2
-		rangeleft = max(0, filter1_peaks[0][readvar] - xdist2)
-		rangeright = min(filter1_peaks[0][readvar] + xdist2, max(frq))
-		rangeright_arr.append(rangeright)
-		rangeleft_arr.append(rangeleft)
-		readvar = readvar + 1
 	finalpeaksx = []
 	finalpeaksy = []
-
-	readvar = 0
-	while readvar < len(rangeright_arr):
-		xmin = np.searchsorted(frq,[rangeleft_arr[readvar]],side='left')[0]
-		xmax = np.searchsorted(frq,[rangeright_arr[readvar]],side ='right')[0]
-		finalpeaky = max(abs(Y)[xmin:xmax])
-		indexy = np.where(abs(Y)==finalpeaky)
+	cfg.final_peaks = np.zeros((2, len(filter1_peaks[1])))
+	
+	# if we only have one peak, we just write that one to the final_peaks array
+	if len(filter1_peaks[0]) == 1:
+		finalpeaky = max(abs(Y))
+		indexy = np.where(abs(Y) == finalpeaky)
 		finalpeakx = frq[indexy]
-		
+		cfg.final_peaks[0] = finalpeakx
 		finalpeaksy.append(finalpeaky)
-		finalpeaksx.append(finalpeakx)
-		#print finalpeaksy
-		maxarray =  max([frq[xmin:xmax]])
-		readvar = readvar + 1
-	maxpeak = round(max(finalpeaksx),0)
+		cfg.final_peaks[1] = finalpeaky
+		maxpeak = round(finalpeakx,0)
+	else:
+		readvar = 0
+		while readvar < len(filter1_peaks[0]):
+			# figure out the x-distance to the next closest peak, then 
+			if readvar == 0:
+				xdist =  abs(filter1_peaks[0][readvar +1] - filter1_peaks[0][readvar])
+			 
+			elif readvar == len(filter1_peaks[0]) - 1:
+				xdist = abs(filter1_peaks[0][readvar - 1] - filter1_peaks[0][readvar])
+			else:
+				distright = abs(filter1_peaks[0][readvar +1] - filter1_peaks[0][readvar])
+				distleft = abs(filter1_peaks[0][readvar - 1] - filter1_peaks[0][readvar])
+				xdist = min(distright, distleft)
+
+			xdist2 = xdist/2
+			rangeleft = max(0, filter1_peaks[0][readvar] - xdist2)
+			rangeright = min(filter1_peaks[0][readvar] + xdist2, max(frq))
+			rangeright_arr.append(rangeright)
+			rangeleft_arr.append(rangeleft)
+			readvar = readvar + 1
+
+		readvar = 0
+		while readvar < len(rangeright_arr):
+			xmin = np.searchsorted(frq,[rangeleft_arr[readvar]],side='left')[0]
+			xmax = np.searchsorted(frq,[rangeright_arr[readvar]],side ='right')[0]
+			finalpeaky = max(abs(Y)[xmin:xmax])
+			indexy = np.where(abs(Y)==finalpeaky)
+			finalpeakx = frq[indexy]
+			cfg.final_peaks[0][readvar] = finalpeakx
+			cfg.final_peaks[1][readvar] = finalpeaky
+			maxarray =  max([frq[xmin:xmax]])
+			readvar = readvar + 1
+		maxpeak = round(max(cfg.final_peaks[0]),0)
 	maxpeakstr = str(maxpeak) + " Hz"
-	p3 = plt.plot(finalpeaksx, finalpeaksy, linestyle = "none", marker = "o", color = "green")
-	plt.title(plot_title + " - max peak at: " + maxpeakstr)
-	#plt.show()
-	final_peaks = []
-	final_peaks = [finalpeaksx, finalpeaksy]
-	return final_peaks
+	if showplot:
+		p1 = plt.plot(frq,abs(Y),'r') # plotting the spectrum
+		p2 = plt.plot(filter1_peaks[0], filter1_peaksy, linestyle = "none", marker = "o", color = "black")
+		p3 = plt.plot(cfg.final_peaks[0], cfg.final_peaks[1], linestyle = "none", marker = "o", color = "green")
+		plt.title(plot_title + " - max peak at: " + maxpeakstr)
+		pylab.xlim([0,500])
+		pylab.ylim([0,400])
+		xlabel('Freq (Hz)')
+		ylabel('|Y(freq)|')
+		plt.show()
+	return cfg.final_peaks
 
 def featurefinder(lengths_output, featuretypestr, featureindex, wavdata, crop):
 	"""

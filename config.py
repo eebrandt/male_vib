@@ -14,3 +14,4 @@ wavdata = []
 featurekey = {"scrape": 0, "thump": 1, "buzz": 2, "scrape_rates": 3}
 feature = []
 fft_dat = []
+final_peaks = []
