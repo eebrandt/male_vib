@@ -215,7 +215,7 @@ def importwav(wavpath):
 	lungime=len(cfg.y)
 	#figures out  total time of feature(in seconds).  Does this by dividing the total number of y-values by the sample rate.
 	# it's important for the frame rate to be a float (with decimal point), otherwise it will give a divide by 0 error as int.
-	timp=len(cfg.y)/48000.
+	timp=len(cfg.y)/cfg.rate
 	# generates equally-spaced units along the time domain, starting with zero and ending with the previously generated total time
 	cfg.t=linspace(0,timp,len(cfg.y))
 	#p1 = plt.plot(t,y)
@@ -313,6 +313,12 @@ def getpeaks(frq, Y, cutoff, plot_title, showplot):
 		ypeak = np.searchsorted(frq,[filter1_peaks[0][readvar,]],side='left')[0]
 		filter1_peaksy.append(absY[ypeak])
 		readvar = readvar + 1
+	
+	# now we have to get the peaks in order, so that each peak is relative to his nearest neighbor.  Important for optimizing peaks in the next step.  this is very important if you don't want innapropriate peaks!
+	indexarray = np.argsort(filter1_peaks[0])
+	indexed_array=filter1_peaks[:,indexarray]
+		
+	
 	# second filtering step.  Judders peaks back and forth along the x-axis of the frequency plot until they reach the true local max (y)
 	rangeleft_arr = []
 	rangeright_arr = []
@@ -331,21 +337,21 @@ def getpeaks(frq, Y, cutoff, plot_title, showplot):
 		maxpeak = round(finalpeakx,0)
 	else:
 		readvar = 0
-		while readvar < len(filter1_peaks[0]):
+		while readvar < len(indexed_array[0]):
 			# figure out the x-distance to the next closest peak, then 
 			if readvar == 0:
-				xdist =  abs(filter1_peaks[0][readvar +1] - filter1_peaks[0][readvar])
+				xdist =  abs(indexed_array[0][readvar +1] - indexed_array[0][readvar])
 			 
-			elif readvar == len(filter1_peaks[0]) - 1:
-				xdist = abs(filter1_peaks[0][readvar - 1] - filter1_peaks[0][readvar])
+			elif readvar == len(indexed_array[0]) - 1:
+				xdist = abs(indexed_array[0][readvar - 1] - indexed_array[0][readvar])
 			else:
-				distright = abs(filter1_peaks[0][readvar +1] - filter1_peaks[0][readvar])
-				distleft = abs(filter1_peaks[0][readvar - 1] - filter1_peaks[0][readvar])
+				distright = abs(indexed_array[0][readvar +1] - indexed_array[0][readvar])
+				distleft = abs(indexed_array[0][readvar - 1] - indexed_array[0][readvar])
 				xdist = min(distright, distleft)
 
 			xdist2 = xdist/2
-			rangeleft = max(0, filter1_peaks[0][readvar] - xdist2)
-			rangeright = min(filter1_peaks[0][readvar] + xdist2, max(frq))
+			rangeleft = max(0, indexed_array[0][readvar] - xdist2)
+			rangeright = min(indexed_array[0][readvar] + xdist2, max(frq))
 			rangeright_arr.append(rangeright)
 			rangeleft_arr.append(rangeleft)
 			readvar = readvar + 1
@@ -380,19 +386,19 @@ def featurefinder(lengths_output, featuretypestr, featureindex, wavdata, crop):
 	This function is used to find a particular region of a wav file for further analysis (usually fft and peak-finding).
 	Description will be fleshed out when the frequency functions are clarified.
 	"""
-
+	
 	featuretype = cfg.featurekey[featuretypestr]
 	start = float(lengths_output[featuretype][1][featureindex])
 	end = float(lengths_output[featuretype][2][featureindex])
-	closestbegin =  np.searchsorted(wavdata[0],[start,],side='left')[0]
-	closestend = np.searchsorted(wavdata[0],[end,],side = 'right')[0]
-	cropamount = int(float(closestend - closestbegin) * crop)
-	closestbegin_cr = closestbegin + cropamount
-	closestend_cr = closestend - cropamount
-	
-
-	feature_whole = [wavdata[0][closestbegin:closestend], wavdata[1][closestbegin:closestend]]
-	feature_buzz = [wavdata[0][closestbegin_cr:closestend_cr], wavdata[1][closestbegin_cr:closestend_cr]]
+	indexstart = np.searchsorted(wavdata[0],[start,],side='left')[0]
+	indexend = np.searchsorted(wavdata[0],[end,],side='right')[0]
+	cropamount = (end - start) * crop
+	start_cr = start + cropamount
+	end_cr = end - cropamount
+	indexstart_cr = np.searchsorted(wavdata[0],[start_cr,],side='left')[0]
+	indexend_cr = np.searchsorted(wavdata[0],[end_cr,],side='right')[0]
+	feature_whole = [wavdata[0][indexstart:indexend], wavdata[1][indexstart:indexend]]
+	feature_buzz = [wavdata[0][indexstart_cr:indexend_cr], wavdata[1][indexstart_cr:indexend_cr]]
 	cfg.feature = [feature_whole, feature_buzz]
 	return cfg.feature	
 

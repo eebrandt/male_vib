@@ -33,6 +33,10 @@ import datetime
 
 # get timestamp for files we'll save
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+startime = datetime.datetime.now()
+startstring = startime.strftime("%H:%M:%S")
+startime = "starting at " + startstring
+print startime
 
 # ask for file that contains general animal info. (treatment, temp., size & weight, etc.)
 animal_information_file = tkFileDialog.askopenfilename(initialdir = "/home/eebrandt/projects/temp_trials/male_only/data/", title = "Choose the file that contains animal information")    
@@ -152,25 +156,30 @@ for individual in individuals:
 					while readvar < lenbuzz:
 						print str(trial) + " buzz " + str(readvar + 1)
 						# picks out each feature from the wav array and loads it so we can analyze that part of the song
-						vib.featurefinder(cfg.lengths_output, "buzz", readvar, cfg.wavdata, .25)
-						print "featurefinder complete"
-						# performs fft on a given buzz
-						vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
-						print "getfreq complete"
-						# performs peak analysis
-						vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .10, str(trial) + " buzz " + str(readvar + 1), plotwav)
-						print "getpeaks complete"
-					
+						try:
+							
+							vib.featurefinder(cfg.lengths_output, "buzz", readvar, cfg.wavdata, .25)
+							print "featurefinder complete"
+							# performs fft on a given buzz
+							vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
+							print "getfreq complete"
+							# performs peak analysis
+							vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .10, str(trial) + " buzz " + str(readvar + 1), plotwav)
+							print "getpeaks complete"
+						except:
+							print "Woops.  Looks like there's a problem with" + str(trial) + ".wav.  Possibly an issue with your particular .wav file."
+							print "\a"
+						
 						# if there's only one peak, we don't have to find the max; just write it to the array as-is
 						if cfg.final_peaks.shape[1] == 1:
 							peakarray[0][readvar] = cfg.final_peaks[0]
 							peakarray[1][readvar] = cfg.final_peaks[1]
 						else:
-							peakarray[0][readvar] = max(cfg.final_peaks[0])
-							maxindex = np.nonzero(cfg.final_peaks[0] == max(cfg.final_peaks[0]))[0][0]
-							peakarray[1][readvar] = cfg.final_peaks[1][maxindex]
+							maxpeak = max(cfg.final_peaks[1])
+							peakarray[1][readvar] = maxpeak
+							maxindex = np.nonzero(cfg.final_peaks[1] == maxpeak)
+							peakarray[0][readvar] = cfg.final_peaks[0][maxindex]
 						readvar = readvar + 1
-					print peakarray
 				else:
 					peakarray = ["", ""]
 
@@ -221,6 +230,11 @@ for individual in individuals:
 				writer.writerow(durations_output_header)
 				writer.writerows(zipoutput) 
 				fl.close()  
+print "All done!"
+print "\a"
+print "ending at " + datetime.datetime.now().strftime("%H:%M:%S")
+print "run went for" +  datetime.datetime.now() - startime 
+
 
 
 
