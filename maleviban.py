@@ -263,13 +263,17 @@ def getfreq(y, Fs, normal):
 	cfg.fft_dat = [cfg.frq, cfg.Y]
 	return cfg.fft_dat
 
+def rms_feature(amp):
+	cfg.rms = sqrt(mean(amp**2))
+	return cfg.rms
+
 def getpeaks(frq, Y, cutoff, plot_title, showplot):
 	"""
 	This is used to find peaks in an fft.  It is unfinished and will be further commented when done
 	"""
 	
 	# first step of getting peaks
-	peaks_obj = Data(frq, Y, smoothness=20)
+	peaks_obj = Data(frq, Y, smoothness=10)
 	#second part of getting peaks
 	peaks_obj.get_peaks(method='slope')
 	#pull data out of peaks data object for filtering
@@ -367,9 +371,11 @@ def getpeaks(frq, Y, cutoff, plot_title, showplot):
 			cfg.final_peaks[1][readvar] = finalpeaky
 			maxarray =  max([frq[xmin:xmax]])
 			readvar = readvar + 1
-		maxpeak = round(max(cfg.final_peaks[0]),0)
+		maxpeak = round(max(cfg.final_peaks[1]),0)
 	maxpeakstr = str(maxpeak) + " Hz"
 	if showplot:
+		plotbuzz = plt.plot(cfg.feature[1][0],cfg.feature[1][1],'r') # plotting the spectrum
+		plt.show()
 		p1 = plt.plot(frq,abs(Y),'r') # plotting the spectrum
 		p2 = plt.plot(filter1_peaks[0], filter1_peaksy, linestyle = "none", marker = "o", color = "black")
 		p3 = plt.plot(cfg.final_peaks[0], cfg.final_peaks[1], linestyle = "none", marker = "o", color = "green")
@@ -400,6 +406,7 @@ def featurefinder(lengths_output, featuretypestr, featureindex, wavdata, crop):
 	feature_whole = [wavdata[0][indexstart:indexend], wavdata[1][indexstart:indexend]]
 	feature_buzz = [wavdata[0][indexstart_cr:indexend_cr], wavdata[1][indexstart_cr:indexend_cr]]
 	cfg.feature = [feature_whole, feature_buzz]
+	#print cfg.feature[0]
 	return cfg.feature	
 
 # this stuff is here to test the peak-finding portion of this module.

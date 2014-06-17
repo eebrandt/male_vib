@@ -173,17 +173,17 @@ for individual in individuals:
 					freq_count = []
 					for item in data_file["buzz_pos"]:
 						# check to make sure that there is a number here (not nan) and within quartile range.
-						if not np.isnan(item) and  (quartile_count * .25) > float(item) > ((quartile_count * .25) - .25):
-							print quartile_count					
+						if data_file["buzz_freq"][readvar] > 0 and  (quartile_count * .25) > float(item) > ((quartile_count * .25) - .25):
+							#print quartile_count					
 							freq_count.append(data_file["buzz_freq"][readvar])
 							allcount.append(data_file["buzz_freq"][readvar])
-							print quartile_freq
-							readvar = readvar + 1
+							#print quartile_freq
 						if freq_count:
 							quartile_freq[quartile_count - 1] = np.mean(freq_count)
 						else:
 							quartile_freq[quartile_count - 1] = " "
-					
+						
+						readvar = readvar + 1
 				
 					# makes sure there's something in the quartile_freq array.  It will throw an error (but not abort the program) if this isn't included
 					#print quartile_freq
@@ -221,4 +221,4 @@ for individual in individuals:
 # closes the csv writer
 fl.close() 
 
-#and float(data_file["buzz_peak"][readvar]) > max(data_file["buzz_peak"]) * .10
+#

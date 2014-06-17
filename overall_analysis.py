@@ -35,8 +35,8 @@ import datetime
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 startime = datetime.datetime.now()
 startstring = startime.strftime("%H:%M:%S")
-startime = "starting at " + startstring
-print startime
+startime_str = "starting at " + startstring
+print startime_str
 
 # ask for file that contains general animal info. (treatment, temp., size & weight, etc.)
 animal_information_file = tkFileDialog.askopenfilename(initialdir = "/home/eebrandt/projects/temp_trials/male_only/data/", title = "Choose the file that contains animal information")    
@@ -67,11 +67,14 @@ annotation_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projec
 duration_plots =  tkMessageBox.askyesno("Duration Plots", "Do you want to view duration plots?")
 rate_plots = tkMessageBox.askyesno("Rate Plots", "Do you want to view scrape rate plots?")
 
-# asks the user if they want to import wav files to do spectral analysis.  If so, lets them decide whether they will view spectral plot graphs.
-wav_load = tkMessageBox.askyesno("Spectral Analysis", "Do you want to load .wav files to do spectral analysis?")
-if wav_load:
-	wav_folder = tkFileDialog.askdirectory(initialdir = "/media/eebrandt/Erin1/Erin_Berkeley/male_temp_vids/", title = "Choose the folder that contains .wav files")
-	plotwav = tkMessageBox.askyesno("Peak Graphs", "Do you want to see plots showing spectra and peaks?")
+#gets spectral data from user
+wav_folder = tkFileDialog.askdirectory(initialdir = "/media/eebrandt/Erin1/Erin_Berkeley/male_temp_vids/", title = "Choose the folder that contains .wav files")
+plotwav = tkMessageBox.askyesno("Peak Graphs", "Do you want to see plots showing spectra and peaks?")
+if wav_folder == "":
+	tkMessageBox.showerror(
+	"Fatal Error",
+	"You need to give the folder that contains your wav data.")
+	raise SystemExit
 
 # sets up an array so we can search through animal_info to find the individuals we're analyzing in our annotation files
 trialname = []
@@ -142,46 +145,75 @@ for individual in individuals:
 				lenbuzz = len(cfg.lengths_output[2][5])
 				lensr = len(cfg.srtot[0])
 				
+				wavpath = wav_folder + "/" + individual + "/" + trial + ".wav"
+				print wavpath
+				# opens wav file, puts it in array
+				vib.importwav(wavpath)
+				#handles rms stuff
+				rms_array = np.zeros((3, max(lenscrape, lenthump, lenbuzz)))
+				print rms_array.shape
+				readvar = 0
+				# loops through each feature type
+				features = ["scrape", "thump", "buzz"]				
+				while readvar < len(features):
+					# loops through each feature
+					featurenum = 0
+					for feature in cfg.lengths_output[readvar][featurenum]:
+						vib.featurefinder(cfg.lengths_output, features[readvar], featurenum, cfg.wavdata, .25)
+						rms = vib.rms_feature(cfg.feature[0][1]) 
+						rms_array[readvar][featurenum] = rms
+						print features[readvar] + str(featurenum)
+						print cfg.rms
+						featurenum = featurenum +1
+					readvar = readvar + 1
+				print rms_array
+						
+				
 				
 				# runs frequency analysis if the user requests (for now we're just looking for max. peaks in buzzes peaks)
-				if wav_load:
-					wavpath = wav_folder + "/" + individual + "/" + trial + ".wav"
-					print wavpath
-					# opens wav file, puts it in array
-					vib.importwav(wavpath)
-					# variable to loop through buzzes
-					readvar = 0
-					# 
-					peakarray = np.zeros((2, lenbuzz))
-					while readvar < lenbuzz:
-						print str(trial) + " buzz " + str(readvar + 1)
-						# picks out each feature from the wav array and loads it so we can analyze that part of the song
-						try:
-							
-							vib.featurefinder(cfg.lengths_output, "buzz", readvar, cfg.wavdata, .25)
-							print "featurefinder complete"
-							# performs fft on a given buzz
-							vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
-							print "getfreq complete"
-							# performs peak analysis
-							vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .10, str(trial) + " buzz " + str(readvar + 1), plotwav)
-							print "getpeaks complete"
-						except:
-							print "Woops.  Looks like there's a problem with" + str(trial) + ".wav.  Possibly an issue with your particular .wav file."
-							print "\a"
+				
+				wavpath = wav_folder + "/" + individual + "/" + trial + ".wav"
+				print wavpath
+				# opens wav file, puts it in array
+				vib.importwav(wavpath)
+				# variable to loop through buzzes
+				readvar = 0
+				peakarray = np.zeros((2, lenbuzz))
+				fundarray = np.zeros((2, lenbuzz))
+				while readvar < lenbuzz:
+					print str(trial) + " buzz " + str(readvar + 1)
+					# picks out each feature from the wav array and loads it so we can analyze that part of the song
+					try:
+						vib.featurefinder(cfg.lengths_output, "buzz", readvar, cfg.wavdata, .25)
+						print "featurefinder complete"
+						# performs fft on a given buzz
+						vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
+						print "getfreq complete"
+						# performs peak analysis
+						vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .10, str(trial) + " buzz " + str(readvar + 1), plotwav)
 						
-						# if there's only one peak, we don't have to find the max; just write it to the array as-is
-						if cfg.final_peaks.shape[1] == 1:
-							peakarray[0][readvar] = cfg.final_peaks[0]
-							peakarray[1][readvar] = cfg.final_peaks[1]
-						else:
-							maxpeak = max(cfg.final_peaks[1])
-							peakarray[1][readvar] = maxpeak
-							maxindex = np.nonzero(cfg.final_peaks[1] == maxpeak)
-							peakarray[0][readvar] = cfg.final_peaks[0][maxindex]
-						readvar = readvar + 1
-				else:
-					peakarray = ["", ""]
+						print "getpeaks complete"
+					except:
+						print "Woops.  Looks like there's a problem with " + str(trial) + ".wav.  Possibly an issue with your particular .wav file."
+						print "\a"
+						
+					# if there's only one peak, we don't have to find the max or the fundamental; just write it to the array as-is
+					if cfg.final_peaks.shape[1] == 1:
+						peakarray[0][readvar] = cfg.final_peaks[0]
+						peakarray[1][readvar] = cfg.final_peaks[1]
+						fundarray[0] = cfg.final_peaks[0]
+						fundarray[1] = cfg.final_peaks[1]
+					else:
+						print cfg.final_peaks
+						fundarray[0][readvar] = cfg.final_peaks[0][0] 
+						fundarray[1][readvar] = cfg.final_peaks[1][0]
+
+						maxpeak = max(cfg.final_peaks[1])
+						peakarray[1][readvar] = maxpeak
+						maxindex = np.nonzero(cfg.final_peaks[1] == maxpeak)
+						peakarray[0][readvar] = cfg.final_peaks[0][maxindex]
+				
+					readvar = readvar + 1
 
 				if duration_plots:
 					vib.plotlengths(cfg.lengths_output[0], cfg.lengths_output[1], cfg.lengths_output[2], trial)
@@ -193,7 +225,7 @@ for individual in individuals:
 				Maxlen = max(len(cfg.lengths_output[0][0]), len(cfg.lengths_output[1][0]), len(cfg.lengths_output[2][0]), len(cfg.lengths_output[3][0]),)
 				# this array is the key to this whole thing working properly.  It is an array with a pre-set number of columns,
 				# but the rows are pre-determined by the *longest* row that exists in the lengths_output array.
-				npoutput = np.zeros((22, Maxlen), dtype="S20")
+				npoutput = np.zeros((26, Maxlen), dtype="S20")
 
 				readvar = 0
 				while readvar < 9:
@@ -206,20 +238,25 @@ for individual in individuals:
 				# and its duration.  TODO: possibly clean this up with a loop?
 				npoutput[9][0:lenscrape] = cfg.lengths_output[0][5]
 				npoutput[10][0:lenscrape] = cfg.lengths_output[0][4]
-				npoutput[11][0:lenthump] = cfg.lengths_output[1][5]
-				npoutput[12][0:lenthump] = cfg.lengths_output[1][4]
-				npoutput[13][0:lenbuzz]	 = cfg.lengths_output[2][5]
-				npoutput[14][0:lenbuzz]  = cfg.lengths_output[2][4]
+				npoutput[11][0:lenscrape] = rms_array[0][0:lenscrape]
+				npoutput[12][0:lenthump] = cfg.lengths_output[1][5]
+				npoutput[13][0:lenthump] = cfg.lengths_output[1][4]
+				npoutput[14][0:lenthump] = rms_array[1][0:lenthump]
+				npoutput[15][0:lenbuzz]	 = cfg.lengths_output[2][5]
+				npoutput[16][0:lenbuzz]  = cfg.lengths_output[2][4]
+				npoutput[17][0:lenbuzz] = rms_array[2][0:lenbuzz]
 				# writes the rate data.  This writes the number of scrapes, duration of scrape region, and number of scrapes
-				npoutput[15][0:lensr]  = cfg.srtot[5]
-				npoutput[16][0:lensr] = cfg.srtot[2]
-				npoutput[17][0:lensr] = cfg.srtot[1]
-				npoutput[18][0:lenbuzz] = peakarray[0]
-				npoutput[19][0:lenbuzz] = peakarray[1]
-				npoutput[20][0] = animal_info[trialindex]["comments"]
+				npoutput[18][0:lensr]  = cfg.srtot[5]
+				npoutput[19][0:lensr] = cfg.srtot[2]
+				npoutput[20][0:lensr] = cfg.srtot[1]
+				npoutput[21][0:lenbuzz] = fundarray[0]
+				npoutput[22][0:lenbuzz] = fundarray[1]
+				npoutput[23][0:lenbuzz] = peakarray[0]
+				npoutput[24][0:lenbuzz] = peakarray[1]
+				npoutput[25][0] = animal_info[trialindex]["comments"]
 
 				# this will be the header for the csv file.  If something looks screwy with the resulting file, check here first
-				durations_output_header = ["tape-video", "complete?", "individual", "treatment", "rank", "date", "temperature (C)", "weight", "ct_width", "scrape_pos", "scrape_dur", "thump_pos", "thump_dur", "buzz_pos", "buzz_dur", "srate_pos", "srate_dur", "srate_num", "buzz_freq", "buzz_peak", "comments"]
+				durations_output_header = ["tape-video", "complete?", "individual", "treatment", "rank", "date", "temperature (C)", "weight", "ct_width", "scrape_pos", "scrape_dur", "scrape_rms", "thump_pos", "thump_dur", "thump_rms", "buzz_pos", "buzz_dur", "buzz_rms", "srate_pos", "srate_dur", "srate_num", "buzz_freq", "buzz_peak", "fund_freq", "fund_peak", "comments"]
 				# this transposes our previous mess of an array so that we can have columns of unequal length written into our csv	
 				zipoutput = list(it.izip_longest(*npoutput, fillvalue=''))
 				#print zipoutput
@@ -232,8 +269,9 @@ for individual in individuals:
 				fl.close()  
 print "All done!"
 print "\a"
+endtime = datetime.datetime.now()
 print "ending at " + datetime.datetime.now().strftime("%H:%M:%S")
-print "run went for" +  datetime.datetime.now() - startime 
+print "run went for" +  str(endtime - startime)
 
 
 
