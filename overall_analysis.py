@@ -147,11 +147,10 @@ for individual in individuals:
 				
 				wavpath = wav_folder + "/" + individual + "/" + trial + ".wav"
 				print wavpath
-				# opens wav file, puts it in array
+				# opens wav file, puts it in array.  Add a "normalize = False" to the arguments of vib.importwav if you want to normalize the data.  Default is to use raw numbers.
 				vib.importwav(wavpath)
-				#handles rms stuff
+				#rms loop similar to the duration stuff.
 				rms_array = np.zeros((3, max(lenscrape, lenthump, lenbuzz)))
-				print rms_array.shape
 				readvar = 0
 				# loops through each feature type
 				features = ["scrape", "thump", "buzz"]				
@@ -162,20 +161,12 @@ for individual in individuals:
 						vib.featurefinder(cfg.lengths_output, features[readvar], featurenum, cfg.wavdata, .25)
 						rms = vib.rms_feature(cfg.feature[0][1]) 
 						rms_array[readvar][featurenum] = rms
-						print features[readvar] + str(featurenum)
-						print cfg.rms
 						featurenum = featurenum +1
 					readvar = readvar + 1
-				print rms_array
 						
 				
 				
-				# runs frequency analysis if the user requests (for now we're just looking for max. peaks in buzzes peaks)
-				
-				wavpath = wav_folder + "/" + individual + "/" + trial + ".wav"
-				print wavpath
-				# opens wav file, puts it in array
-				vib.importwav(wavpath)
+				# runs peak frequency analysis if the user requests (for now we're just looking for max. peaks in buzzes peaks)
 				# variable to loop through buzzes
 				readvar = 0
 				peakarray = np.zeros((2, lenbuzz))
@@ -201,10 +192,9 @@ for individual in individuals:
 					if cfg.final_peaks.shape[1] == 1:
 						peakarray[0][readvar] = cfg.final_peaks[0]
 						peakarray[1][readvar] = cfg.final_peaks[1]
-						fundarray[0] = cfg.final_peaks[0]
-						fundarray[1] = cfg.final_peaks[1]
+						fundarray[0][readvar] = cfg.final_peaks[0]
+						fundarray[1][readvar] = cfg.final_peaks[1]
 					else:
-						print cfg.final_peaks
 						fundarray[0][readvar] = cfg.final_peaks[0][0] 
 						fundarray[1][readvar] = cfg.final_peaks[1][0]
 
@@ -259,41 +249,21 @@ for individual in individuals:
 				durations_output_header = ["tape-video", "complete?", "individual", "treatment", "rank", "date", "temperature (C)", "weight", "ct_width", "scrape_pos", "scrape_dur", "scrape_rms", "thump_pos", "thump_dur", "thump_rms", "buzz_pos", "buzz_dur", "buzz_rms", "srate_pos", "srate_dur", "srate_num", "buzz_freq", "buzz_peak", "fund_freq", "fund_peak", "comments"]
 				# this transposes our previous mess of an array so that we can have columns of unequal length written into our csv	
 				zipoutput = list(it.izip_longest(*npoutput, fillvalue=''))
-				#print zipoutput
 				
-				# this bit writes the file. Comment it out if you want to check the functionality of the file without making csvs.
+				# this bit writes the file. Comment it out if you want to check the functionality of this program without making csvs.
 				fl = open(annotation_folder +"/"+ individual + "/" + trial + "/" + trial +"_" + "duration_data" + "_" + timestamp + '.csv', 'w')
 				writer = csv.writer(fl)
 				writer.writerow(durations_output_header)
 				writer.writerows(zipoutput) 
-				fl.close()  
+				fl.close() 
+ 
+#beeps, and gives user info about how long the run went for
 print "All done!"
 print "\a"
 endtime = datetime.datetime.now()
+#gives user info about how long it took to do the run
 print "ending at " + datetime.datetime.now().strftime("%H:%M:%S")
-print "run went for" +  str(endtime - startime)
+print "run went for " +  str(endtime - startime)
 
 
 
-
-
-					#vib.importwav
-					#wavpath = wav_folder + "/" + individual + "/" + trial + ".wav"
-					#print wavpath
-					#vib.importwav(wavpath)
-					# for each feature type (scrape, thump, buzz):
-						# for each feature
-							# run featurefinder
-							# vib.featurefinder(cfg.lengths_output, "buzz", 1, cfg.wavdata, .25)
-							# vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
-							# run getpeaks
-							# vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .02, trial + " buzz 2")
-							# show peaks, get confirmation that they're ok
-							# threshold (to add later)
-							# append buzz, thump or scrape array with peak, threshold info 
-			
-					# *** export summary stats into one export file with summary info
-					# *** export file that has x, y for time domain
-					# *** export file that has x, y for frequency domain
-
-				#shows duration and rate plots if the user requested them

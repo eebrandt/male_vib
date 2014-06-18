@@ -10,6 +10,7 @@ import math
 import ctypes
 import tkMessageBox
 import pylab
+import re
 
 import matplotlib.pyplot as plt
 import config as cfg
@@ -22,6 +23,7 @@ from numpy import sin, linspace, pi
 #from pylab import plot, show, title, xlabel, ylabel, subplot, savefig
 from scipy import fft, arange, ifft, signal, fft, arange, ifft
 from pypeaks import Data, Intervals
+
 
 def importanns(wavpath):
 	"""
@@ -200,29 +202,35 @@ def plot_rates(durarray, plot_rates_title):
 	plt.legend(loc='upper left', shadow=True, numpoints = 1)
 	plt.show()
 		
-def importwav(wavpath):
+def importwav(wavpath, normalize = False):
 	""" 
 	description: this function reads in a wav file existing at a give path and converts it into an x/y series of points by dividing each
-	number by the sampling rate
+	number by the sampling rate.  Also, it optionally normalizes the y values (amplitude) based on the bitrate of the file.
 	parameters: wavpath: the path name of the .wav file
 	returns: cfg.wavdata, which is an x, y list of all the points in the .wav file, with y being amplitude and x being time.
 	"""
+	# actually loads the file, saving the bitrate, and data of the file, respectively
+	cfg.rate,cfg.y = scipy.io.wavfile.read(wavpath, mmap=False)
 	
-	rate,data=read(wavpath)
-	cfg.rate = float(rate)
-	cfg.y=data
+	# this figures out the bit depth of the file (not sure if the io.wavfile function can handle anything other than 16-bit, but if it can, we will record it.  This bitrate number allows us to normalize the resulting output to the maximum/minimum possible values for a given bit depth (audio gui programs do this automatically, so this can be good for sanity-checking our data).  You will want to use the "real" numbers if you want to make direct measurements of amplitude (such as when recording location is standardized).
+	bitdepth = float(re.findall('\d+', str(cfg.y.dtype))[0])
+	cfg.rate = float(cfg.rate)
+
+	cfg.y.astype(float)
+	# this normalizes the array containing the .wav data if requested by the user
+	if normalize:
+		norm_constant = (2 ** bitdepth)/2
+		cfg.y = cfg.y/norm_constant
 	# gets total length of "y" array, which amounts to the total number of samples in the clip
 	lungime=len(cfg.y)
-	#figures out  total time of feature(in seconds).  Does this by dividing the total number of y-values by the sample rate.
 	# it's important for the frame rate to be a float (with decimal point), otherwise it will give a divide by 0 error as int.
 	timp=len(cfg.y)/cfg.rate
 	# generates equally-spaced units along the time domain, starting with zero and ending with the previously generated total time
 	cfg.t=linspace(0,timp,len(cfg.y))
-	#p1 = plt.plot(t,y)
+	#p1 = plt.plot(cfg.t,cfg.y)
 	#plt.xlim(0, timp)
 	#show()	
-	cfg.wavdata = [cfg.t, cfg.y, cfg.rate]
-		
+	cfg.wavdata = [cfg.t, cfg.y, cfg.rate]	
 	return cfg.wavdata
 
 def getfreq(y, Fs, normal):
@@ -264,7 +272,8 @@ def getfreq(y, Fs, normal):
 	return cfg.fft_dat
 
 def rms_feature(amp):
-	cfg.rms = sqrt(mean(amp**2))
+	abs_square =  abs(mean(amp**2))
+	cfg.rms = sqrt(abs_square)
 	return cfg.rms
 
 def getpeaks(frq, Y, cutoff, plot_title, showplot):
@@ -381,7 +390,7 @@ def getpeaks(frq, Y, cutoff, plot_title, showplot):
 		p3 = plt.plot(cfg.final_peaks[0], cfg.final_peaks[1], linestyle = "none", marker = "o", color = "green")
 		plt.title(plot_title + " - max peak at: " + maxpeakstr)
 		pylab.xlim([0,500])
-		pylab.ylim([0,400])
+		#pylab.ylim([0,400])
 		xlabel('Freq (Hz)')
 		ylabel('|Y(freq)|')
 		plt.show()
