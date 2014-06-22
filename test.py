@@ -27,7 +27,7 @@ startime = datetime.datetime.now()
 #print max(wav[1])
 #print float(wav[1][48000 * 46.043])/32768
 #vib.importanns("/home/eebrandt/projects/temp_trials/male_only/data/929/12-929/12-929.labels.txt")
-vib.importwav("/home/eebrandt/projects/temp_trials/test/b1.wav", normalize = False)
+vib.importwav("/home/eebrandt/projects/temp_trials/test/b1.wav", normalize = True)
 #figure(figsize=(3,10))
 #p1 = plt.plot(cfg.t,cfg.y)
 #plt.show()	

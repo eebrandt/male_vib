@@ -181,7 +181,7 @@ for individual in individuals:
 						vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
 						print "getfreq complete"
 						# performs peak analysis
-						vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .10, str(trial) + " buzz " + str(readvar + 1), plotwav)
+						vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .10, plotwav, str(trial) + " buzz " + str(readvar + 1))
 						
 						print "getpeaks complete"
 					except:
