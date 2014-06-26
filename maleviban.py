@@ -279,7 +279,7 @@ def featurefinder(lengths_output, featuretypestr, featureindex, wavdata, crop = 
 	cfg.feature = [feature_whole, feature_buzz]
 	return cfg.feature	
 
-def getfreq(y, Fs, normal = -1):
+def getfreq(y, Fs, plot, normal = -1):
 	"""
 	Description: Performs an fft of an array that has been broken down into x, y domains by the importwav function.
 	Parameters: y: y-values of a wav file, Fs: sampling rate of wav file, normal: normaliziation number.  This sets the number you'll use
@@ -308,12 +308,13 @@ def getfreq(y, Fs, normal = -1):
 	cfg.Y = (cfg.Y/normal) * 100
 	cfg.Y = abs(cfg.Y)
 	
-	# some extra plot stuff to uncomment.  Mostly for debugging.
-	#p1 = plt.plot(cfg.frq,abs(cfg.Y),'r')
-	#pylab.xscale('log')
-	#pylab.xlim([0,4000])
-	#pylab.ylim([0,max(abs(cfg.Y))])
-	#show()	
+	#Plots the fft if the user requests it
+	if plot:
+		p1 = plt.plot(cfg.frq,abs(cfg.Y),'r')
+		#pylab.xscale('log')
+		pylab.xlim([0,4000])
+		pylab.ylim([0,max(abs(cfg.Y))])
+		show()	
 
 	# sets the return variable, which contains frequency and amplitude information
 	cfg.fft_dat = [cfg.frq, cfg.Y]
@@ -321,7 +322,7 @@ def getfreq(y, Fs, normal = -1):
 
 
 
-def getpeaks(frq, Y, cutoff, showplot, plot_title = "Your plot, fine sir/madam: ", plotraw = False):
+def getpeaks(frq, Y, cutoff,  showplot, smooth = 10, plot_title = "Your plot, fine sir/madam: ", plotraw = False):
 	"""
 	Description: This is used to find peaks in an fft. 
 	Parameters: frq: frequency data from an fft, Y: amplitude data from an fft, cutoff: percent of highest peak at which we'll consider
@@ -339,21 +340,21 @@ def getpeaks(frq, Y, cutoff, showplot, plot_title = "Your plot, fine sir/madam: 
 	
 	# first step of getting peaks - smooths the fft
 	# smoothness value can be changed to make the peak-detection more or less sensitive depending on your needs.
-	peaks_obj = Data(frq, Y, smoothness=10)
+	peaks_obj = Data(frq, Y, smoothness=smooth)
 	#second part of getting peaks
 	peaks_obj.get_peaks(method='slope')
-	
 	# gives a raw, built-in plot of the peak data.  Axes aren't particularly meaningful, but can be a useful sanity check.
 	if plotraw:
 		peaks_obj.plot()
 
 	#pull data out of peaks data object for filtering
 	peaks = peaks_obj.peaks["peaks"]
+	
 	peaksnp = np.zeros((2, len(peaks[0])))
 	peaksnp[0] = peaks[0]
 	peaksnp[1] = peaks[1] 
 	maxpeaks = max(peaks_obj.peaks["peaks"][1])
-
+	
 
 	# first filtering function: removes peaks that are shorter than the cutoff specified in function
 	filteredypeaks = []
@@ -436,12 +437,8 @@ def getpeaks(frq, Y, cutoff, showplot, plot_title = "Your plot, fine sir/madam: 
 			readvar = readvar + 1
 		maxpeak = round(max(cfg.final_peaks[1]),0)
 	maxpeakstr = str(maxpeak) + " Hz"
-
 	if showplot:
 		# shows plot if user requests it
-		# if we want to see the feature in the time domain (for error checking)
-		#plotbuzz = plt.plot(cfg.feature[1][0],cfg.feature[1][1],'r') 
-		plt.show()
 		# plotting the spectrum
 		p1 = plt.plot(frq,abs(Y),'r') 
 		# plotting the original (non-filtered) peaks
@@ -454,7 +451,28 @@ def getpeaks(frq, Y, cutoff, showplot, plot_title = "Your plot, fine sir/madam: 
 		xlabel('Freq (Hz)')
 		ylabel('|Y(freq)|')
 		plt.show()
+	
 	return cfg.final_peaks
+def simplepeaks(frq, Y, peaknum, showplot = False, plot_title = "Your plot, fine sir/madam: "):
+	cfg.peaks = []
+	readvar = 0
+	maxpeak = []
+	maxfrq = []
+	while readvar < peaknum:
+		maxpeak.append(float(max(abs(Y))))
+		peakindex = np.where(abs(Y)==max(abs(Y)))
+		maxfrq.append(float(frq[peakindex]))
+		readvar = readvar + 1
+	cfg.peaks.append(maxfrq)
+	cfg.peaks.append(maxpeak)
+	
+	if showplot:
+		p1 = plt.plot(frq,abs(Y),'r') 
+		p3 = plt.plot(peaks[0], peaks[1], linestyle = "none", marker = "o", color = "green")
+		plt.title(plot_title + " - max peak at: " + str(peaks[0][0]) + "Hz")
+		plt.show()
+	print cfg.peaks
+	return cfg.peaks
 
 def rms_feature(amp):
 	"""

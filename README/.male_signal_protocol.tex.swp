@@ -16,7 +16,7 @@
 \renewcommand\thesection{\Alph{section}.}
 \renewcommand\thesubsection{\Alph{section}.\arabic{subsection}}
 \begin{document}
-{\large \centerline{\emph{Habronattus clypeatus} Temperature Trial Male Signal Processing Protocol}}
+{\large \centerline{\emph{Habronattus clypeatus} Temperature Trial Male Signal Processing/Analysis Protocol}}
 \section{Materials}
 \subsection{Materials}
 \begin{itemize}
@@ -29,14 +29,29 @@
 \item{ffmpeg (version 2.1.3)}
 \item{audacity(version 2.0.5)}
 \item {text editor}
-\item custom python scripts:
+\item custom python scripts (python version 2.7):
 \begin{itemize}
 \item maleviban.py: contains functions for analysis; not called directly
 \item overall\_analysis.py: actually does the analysis for every individual, makes one .csv file for each individual
 \item all\_inds.py: compiles all information from each individual into one .csv file
 \item config.py: configuration file that allows shared variables between other scripts.  Need to have this file in the same directory as the others.
 \end{itemize}
+\item python modules:
+\begin{itemize}
+\item numpy
+\item scipy
+\item matplotlib
+\item pypeaks
+\item tkMessageBox
 \end{itemize}
+\item Custom R Scripts (version 3.1.0)
+\begin{itemize}
+\item plots.r: used to make simple (Tukey) plots of all features
+\item q10\_stuff.R: used for regression analysis of all features
+\end{itemize}
+\item DO\_EVERYTHING.sh: bash script to execute all necessary code to do data processing/analysis
+\end{itemize}
+
 
 \section{Wav Annotation Methods}
 \subsection{Converting Videos to .wav Files}

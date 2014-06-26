@@ -16,3 +16,4 @@ feature = []
 fft_dat = []
 final_peaks = []
 rms = 0.0
+peaks = [[],[]]

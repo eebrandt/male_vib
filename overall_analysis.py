@@ -31,6 +31,8 @@ import itertools as it
 # gets current date and time for timestamp
 import datetime
 
+from itertools import chain
+
 # get timestamp for files we'll save
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 startime = datetime.datetime.now()
@@ -166,7 +168,38 @@ for individual in individuals:
 						
 				
 				
-				# runs peak frequency analysis if the user requests (for now we're just looking for max. peaks in buzzes peaks)
+				# runs peak frequency analysis if the user requests (for now we're just looking for fundamental peaks in buzzes peaks)				
+				
+				featuretype = 0
+				nonbuzz_frq = []
+				nonbuzz_peak = []
+				while featuretype < 2:
+					nonbuzz_temp_frq = []	
+					nonbuzz_temp_peaks = []
+					readvar = 0			
+					while readvar < len(cfg.lengths_output[featuretype][5]):
+						print str(trial) + " " + features[featuretype] + " " + str(readvar + 1)
+						try:
+							vib.featurefinder(cfg.lengths_output, features[featuretype], readvar, cfg.wavdata, .25)
+							print "featurefinder complete"
+							# performs fft on a given feature (thump or scrape)
+							vib.getfreq(cfg.feature[1][1], cfg.rate, False, 10000000)
+							print "getfreq complete"
+							# performs peak analysis (thump or scrape)
+							vib.simplepeaks(cfg.fft_dat[0], cfg.fft_dat[1], 1, plot_title = str(trial) + " " + features[featuretype] + " " + str(readvar + 1))
+							print "simple peaks complete"
+						except:
+							print "Woops.  Looks like there's a problem with " + str(trial) + ".wav.  Possibly an issue with your particular .wav file."
+							print "\a"
+						nonbuzz_temp_frq.append(cfg.peaks[0][0])
+						nonbuzz_temp_peaks.append(cfg.peaks[1][0])
+						readvar = readvar + 1
+					
+					nonbuzz_frq.append(nonbuzz_temp_frq)
+					nonbuzz_peak.append(nonbuzz_temp_peaks)
+					featuretype = featuretype + 1
+				np_nonbuzz_frq = np.array((nonbuzz_frq))
+				np_nonbuzz_peak = np.array((nonbuzz_peak))
 				# variable to loop through buzzes
 				readvar = 0
 				peakarray = np.zeros((2, lenbuzz))
@@ -178,10 +211,10 @@ for individual in individuals:
 						vib.featurefinder(cfg.lengths_output, "buzz", readvar, cfg.wavdata, .25)
 						print "featurefinder complete"
 						# performs fft on a given buzz
-						vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
+						vib.getfreq(cfg.feature[1][1], cfg.rate, False, 10000000)
 						print "getfreq complete"
 						# performs peak analysis
-						vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .10, plotwav, str(trial) + " buzz " + str(readvar + 1))
+						vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .10, plotwav, smooth = 10, plot_title = str(trial) + " buzz " + str(readvar + 1))
 						
 						print "getpeaks complete"
 					except:
@@ -215,7 +248,7 @@ for individual in individuals:
 				Maxlen = max(len(cfg.lengths_output[0][0]), len(cfg.lengths_output[1][0]), len(cfg.lengths_output[2][0]), len(cfg.lengths_output[3][0]),)
 				# this array is the key to this whole thing working properly.  It is an array with a pre-set number of columns,
 				# but the rows are pre-determined by the *longest* row that exists in the lengths_output array.
-				npoutput = np.zeros((26, Maxlen), dtype="S20")
+				npoutput = np.zeros((32, Maxlen), dtype="S20")
 
 				readvar = 0
 				while readvar < 9:
@@ -239,14 +272,19 @@ for individual in individuals:
 				npoutput[18][0:lensr]  = cfg.srtot[5]
 				npoutput[19][0:lensr] = cfg.srtot[2]
 				npoutput[20][0:lensr] = cfg.srtot[1]
-				npoutput[21][0:lenbuzz] = fundarray[0]
-				npoutput[22][0:lenbuzz] = fundarray[1]
-				npoutput[23][0:lenbuzz] = peakarray[0]
-				npoutput[24][0:lenbuzz] = peakarray[1]
-				npoutput[25][0] = animal_info[trialindex]["comments"]
+				# writes the frequency data (peaks for scrape and thump, fundamental and peaks for buzzes)
+				npoutput[21][0:lenscrape] = nonbuzz_frq[0]
+				npoutput[22][0:lenscrape] = nonbuzz_peak[0]
+				npoutput[23][0:lenthump] = nonbuzz_frq[1]
+				npoutput[24][0:lenthump] = nonbuzz_peak[1]
+				npoutput[25][0:lenbuzz] = fundarray[0]
+				npoutput[26][0:lenbuzz] = fundarray[1]
+				npoutput[27][0:lenbuzz] = peakarray[0]
+				npoutput[28][0:lenbuzz] = peakarray[1]
+				npoutput[29][0] = animal_info[trialindex]["comments"]
 
 				# this will be the header for the csv file.  If something looks screwy with the resulting file, check here first
-				durations_output_header = ["tape-video", "complete?", "individual", "treatment", "rank", "date", "temperature (C)", "weight", "ct_width", "scrape_pos", "scrape_dur", "scrape_rms", "thump_pos", "thump_dur", "thump_rms", "buzz_pos", "buzz_dur", "buzz_rms", "srate_pos", "srate_dur", "srate_num", "buzz_freq", "buzz_peak", "fund_freq", "fund_peak", "comments"]
+				durations_output_header = ["tape-video", "complete?", "individual", "treatment", "rank", "date", "temperature (C)", "weight", "ct_width", "scrape_pos", "scrape_dur", "scrape_rms", "thump_pos", "thump_dur", "thump_rms", "buzz_pos", "buzz_dur", "buzz_rms", "srate_pos", "srate_dur", "srate_num", "scrape_freq", "scrape_peak", "thump_freq", "thump_peak", "buzz_freq", "buzz_peak", "fund_freq", "fund_peak", "comments"]
 				# this transposes our previous mess of an array so that we can have columns of unequal length written into our csv	
 				zipoutput = list(it.izip_longest(*npoutput, fillvalue=''))
 				
