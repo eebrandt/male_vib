@@ -73,33 +73,67 @@ anovas_ravg <-aov(sratesavgfit)
 #TukeyHSD(anovas_rq4)
 #TukeyHSD(anovas_ravg)
 
+
+
+
+
 #fundq1fit <- lm(fundfreq_q1~treatment, data=overall)
-fundq2fit <- lm(fundfreq_q2~treatment, data=overall)
-fundq3fit <- lm(fundfreq_q3~treatment, data=overall)
-fundq4fit <- lm(fundfreq_q4~treatment, data=overall)
-fundavgfit <- lm(fundfreq_avg~treatment, data=overall)
+sfreq_q1 <- lm(sfreq_q1~treatment, data=overall)
+sfreq_q2 <- lm(sfreq_q2~treatment, data=overall)
+sfreq_q3 <- lm(sfreq_q3~treatment, data=overall)
+sfreq_q4 <- lm(sfreq_q4~treatment, data=overall)
+sfreq_avgfit <- lm(sfreq_avg~treatment, data=overall)
+
 #anovas_fq1 <-aov(fundq1fit)
-anovas_fq2 <-aov(fundq2fit)
-anovas_fq3 <-aov(fundq3fit)
-anovas_fq4 <-aov(fundq4fit)
-anovas_favg <-aov(fundavgfit)
-#TukeyHSD(anovas_fq1)
-#TukeyHSD(anovas_fq2)
-#TukeyHSD(anovas_fq3)
-#TukeyHSD(anovas_fq4)
-#TukeyHSD(anovas_favg)
+anovas_fsq1 <-aov(sfreq_q1)
+anovas_fsq2 <-aov(sfreq_q2)
+anovas_fsq3 <-aov(sfreq_q3)
+anovas_fsq4 <-aov(sfreq_q4)
+anovas_fsavg <-aov(sfreq_avgfit)
+
+#fundq1fit <- lm(fundfreq_q1~treatment, data=overall)
+tfreq_q1 <- lm(tfreq_q1~treatment, data=overall)
+tfreq_q2 <- lm(tfreq_q2~treatment, data=overall)
+tfreq_q1 <- lm(tfreq_q3~treatment, data=overall)
+tfreq_q4 <- lm(tfreq_q4~treatment, data=overall)
+tfreq_avgfit <- lm(tfreq_avg~treatment, data=overall)
+
+#anovas_fq1 <-aov(fundq1fit)
+anovas_ftq1 <-aov(sfreq_q1)
+anovas_ftq2 <-aov(sfreq_q2)
+anovas_ftq3 <-aov(sfreq_q2)
+anovas_ftq4 <-aov(sfreq_q3)
+anovas_ftavg <-aov(sfreq_avgfit)
+
+
+#fundq1fit <- lm(fundfreq_q1~treatment, data=overall)
+bfreq_2fit <- lm(bfreq_q2~treatment, data=overall)
+bfreq_3fit <- lm(bfreq_q3~treatment, data=overall)
+bfreq_4fit <- lm(bfreq_q4~treatment, data=overall)
+bfreq_avgfit <- lm(bfreq_avg~treatment, data=overall)
+#anovas_fq1 <-aov(fundq1fit)
+anovas_fq2 <-aov(bfreq_2fit)
+anovas_fq3 <-aov(bfreq_3fit)
+anovas_fq4 <-aov(bfreq_4fit)
+anovas_favg <-aov(bfreq_avgfit)
 
 sink("tukey_summaries.txt", append=FALSE, split=TRUE)
-cat("Scrapes\n")
+cat("Scrape Duration\n")
 print(TukeyHSD(anovas_savg))
-cat("Thumps\n")
+cat("Thump Duration\n")
 print(TukeyHSD(anovas_tavg))
-cat("Buzzes\n")
+cat("Buzz Duration\n")
 print(TukeyHSD(anovas_bavg))
 cat("Scrape Rates\n")
 print(TukeyHSD(anovas_ravg))
+cat("Scrape Peak Frequency")
+print(TukeyHSD(anovas_fsavg))
+cat("Thump Peak Frequency")
+print(TukeyHSD(anovas_ftavg))
 cat("Buzz Fundamentals\n")
 print(TukeyHSD(anovas_favg))
+print(TukeyHSD(anovas_fsavg))
+print(TukeyHSD(anovas_ftavg))
 sink()
 
 pdf(file = "Tukey_plots.pdf") 
@@ -161,27 +195,53 @@ srates_all <- bwplot(srates_avg ~ treatment, data = overall,
 )
 plot(srates_all)
 
-fundfreq_all <- bwplot(fundfreq_avg ~ treatment, data = overall,
-       xlab = "Treatment", ylab = "Fundamental Frequency (Hz)", 
-       fill = c("blue", "yellow", "red"),
-       main = "Differences in Fundamental Buzz Frequency For Three Temperature Treatments",
-       par.settings = list(
-         plot.symbol=cols,
-         box.rectangle = cols,
-         box.dot = cols,
-         box.umbrella=cols 
-         
-       )
+sfreq_all <- bwplot(sfreq_avg ~ treatment, data = overall,
+              xlab = "Treatment", ylab = "Fundamental Frequency (Hz)",
+              fill = c("blue", "yellow", "red"),
+              main = "Differences in Peak Scrape Frequency for Three Temperature Treatments",
+              par.settings = list(
+                  plot.symbol=cols,
+                  box.rectangle = cols,
+                  box.dot = cols,
+                  box.umbrella=cols 
+                      
+                  )
 )
 
-plot(fundfreq_all)
+tfreq_all <- bwplot(tfreq_avg ~ treatment, data = overall,
+                    xlab = "Treatment", ylab = "Fundamental Frequency (Hz)",
+                    fill = c("blue", "yellow", "red"),
+                    main = "Differences in Peak Thump Frequency for Three Temperature Treatments",
+                    par.settings = list(
+                      plot.symbol=cols,
+                      box.rectangle = cols,
+                      box.dot = cols,
+                      box.umbrella=cols 
+                      
+                    )
+                  )
+plot(tfreq_all)
 
+bfreq_all <- bwplot(bfreq_avg ~ treatment, data = overall,
+                    xlab = "Treatment", ylab = "Fundamental Frequency (Hz)", 
+                    fill = c("blue", "yellow", "red"),
+                    main = "Differences in Fundamental Buzz Frequency For Three Temperature Treatments",
+                    par.settings = list(
+                      plot.symbol=cols,
+                      box.rectangle = cols,
+                      box.dot = cols,
+                      box.umbrella=cols 
+                      
+                    )
+)
+
+plot(bfreq_all)
 # rms stuff
 
 srms_all <- bwplot(srms_avg ~ treatment, data = overall,
        xlab = "Treatment", ylab = "Scrape Duration (s)", 
        fill = c("blue", "yellow", "red"),
-       main = "Differences in Scrape Amplitude (rms) For Three Temperature Treatments",
+       main = "Differences in Scrape Amplitude (rms) for Three Temperature Treatments",
        par.settings = list(
          plot.symbol=cols,
          box.rectangle = cols,
@@ -231,6 +291,8 @@ rm_s <- bwplot(scrape_avg ~ treatment, data = complete,
          
        )
 )
+
+
 plot(rm_s)
 
 rm_t <- bwplot(thump_avg ~ treatment, data = complete,
@@ -275,7 +337,7 @@ rm_srate <- bwplot(srates_avg ~ treatment, data = complete,
 )
 plot(rm_srate)
 
-rm_fund <- bwplot(fundfreq_avg ~ treatment, data = complete,
+rm_bfreq <- bwplot(bfreq_avg ~ treatment, data = complete,
             xlab = "Treatment", ylab = "Fundamental Frequency (Hz)", 
             fill = rmcols,
             main = "Differences in Fundamental Frequency For Three Temperature Treatments (repeated measures)",
@@ -287,5 +349,5 @@ rm_fund <- bwplot(fundfreq_avg ~ treatment, data = complete,
                      
            )
 )
-plot(rm_fund)
+plot(rm_bfreq)
 dev.off()

@@ -35,7 +35,7 @@ def find_csv_filenames(path_to_dir, suffix=".csv"):
 data_folder = tkFileDialog.askdirectory(initialdir= "/home/eebrandt/projects/temp_trials/male_only/data", title = "Choose the folder that contains data files.")
 
 # Defines the header for the .csv file we're going to make
-durations_output_header = ["tape_video", "complete", "individual", "treatment" , "rank", "date", "temperature", "weight", "ct_width", "scrape_q1", "scrape_q2", "scrape_q3", "scrape_q4", "scrape_avg", "srms_q1", "srms_q2", "srms_q3", "srms_q4", "srms_avg", "thump_q1", "thump_q2", "thump_q3", "thump_q4", "thump_avg", "trms_q1", "trms_q2","trms_q3","trms_q3","trms_avg","buzz_q1", "buzz_q2", "buzz_q3", "buzz_q4","buzz_avg", "brms_q1", "brms_q2", "brms_q3", "brms_q4", "brms_avg", "srates_q1", "srates_q2", "srates_q3", "srates_q4", "srates_avg", "sfreq_q1", "sfreq_q2", "sfreq_q3", "sfreq_q4", "sfreq_avg", "tfreq_q1", "tfreq_q2", "tfreq_q3", "tfreq_q4", "tfreq_avg", "bfreak_q1", "bfreak_q2", "bfreak_q3", "bfreak_q4", "bfreak_avg", "comments"]
+durations_output_header = ["tape_video", "complete", "individual", "treatment" , "rank", "date", "temperature", "weight", "ct_width", "scrape_q1", "scrape_q2", "scrape_q3", "scrape_q4", "scrape_avg", "srms_q1", "srms_q2", "srms_q3", "srms_q4", "srms_avg", "thump_q1", "thump_q2", "thump_q3", "thump_q4", "thump_avg", "trms_q1", "trms_q2","trms_q3","trms_q3","trms_avg","buzz_q1", "buzz_q2", "buzz_q3", "buzz_q4","buzz_avg", "brms_q1", "brms_q2", "brms_q3", "brms_q4", "brms_avg", "srates_q1", "srates_q2", "srates_q3", "srates_q4", "srates_avg", "sfreq_q1", "sfreq_q2", "sfreq_q3", "sfreq_q4", "sfreq_avg", "tfreq_q1", "tfreq_q2", "tfreq_q3", "tfreq_q4", "tfreq_avg", "bfreq_q1", "bfreq_q2", "bfreq_q3", "bfreq_q4", "bfreq_avg", "comments"]
 
 # Defines and opens a .csv file that we'll write our file to
 fl = open(data_folder + "/" + "temp_vibration_data" + "_" + timestamp + '.csv', 'w')
@@ -237,7 +237,7 @@ for individual in individuals:
 						colpeak = feature_type[featurecount] + "_peak"
 						colpos = feature_type[featurecount] + "_pos"
 						for item in data_file[colpos]:
-							if data_file[colpos][readvar] > 0 and  (quartile_count * .25) > float(item) > ((quartile_count * .25) - .25):	
+							if data_file[colpos][readvar] > 0 and  (quartile_count * .25) > float(item) > ((quartile_count * .25) - .25) and data_file[colfreq][readvar] < 5000:	
 								peak_count.append(data_file[colpeak][readvar])
 								freq_count.append(data_file[colfreq][readvar])
 								allpeak.append(data_file[colpeak][readvar])

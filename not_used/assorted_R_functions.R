@@ -420,3 +420,17 @@ sink()
 #lines(tempvalues, (tempvalues^powerc), lty = 2, col = "green")
 
 #lines(tempvalues, quadscrapes, col = "red", lwd = 3)
+
+# mixed model
+summary(lme(scrape_avg ~ treatment, data = complete, random = ~ 1 | individual))
+
+summary(lme(thump_avg ~ treatment, data = complete, random = ~ 1 | individual))
+
+summary(lme(buzz_avg ~ treatment, data = complete, random = ~ 1 | individual))
+summary(lme(fundfreq_avg ~ treatment, data = complete, random = ~ 1 | individual))
+
+
+uniques <- unique(complete$individual)
+scrape_avg <- c(complete$individual, complete$scrape_avg, complete$weight, complete$ct_width)
+
+scrape_avg <-as.matrix(complete[c("individual","scrape_avg","weight", "ct_width")])

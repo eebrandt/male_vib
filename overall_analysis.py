@@ -92,9 +92,13 @@ ndtrialname = np.array(trialname)
 # gets the indivudals based on everything that's in the top-level folder (folders and files)
 individuals =  os.listdir(annotation_folder)
 #loop to go through each "individual"
+indnum = 1
+individual_count = sum(1 for i in individuals if os.path.isdir(annotation_folder + "/" + i))
 for individual in individuals:
 	# checks to see which "individuals" are actually folders
 	if os.path.isdir(annotation_folder + "/" + individual):
+		print individual + " number " + str(indnum) + "/" + str(individual_count) + " total"
+		indnum = indnum + 1
 		# make sure each "individual" is a folder
 		trials = os.listdir(annotation_folder + "/" + individual)
 		# loop to go through each individual
@@ -180,13 +184,13 @@ for individual in individuals:
 					while readvar < len(cfg.lengths_output[featuretype][5]):
 						print str(trial) + " " + features[featuretype] + " " + str(readvar + 1)
 						try:
-							vib.featurefinder(cfg.lengths_output, features[featuretype], readvar, cfg.wavdata, .25)
-							print "featurefinder complete"
+							vib.featurefinder(cfg.lengths_output, features[featuretype], readvar, cfg.wavdata, .25)	
+							print "featurefinder complete"	
 							# performs fft on a given feature (thump or scrape)
-							vib.getfreq(cfg.feature[1][1], cfg.rate, False, 10000000)
+							vib.getfreq(cfg.feature[0][1], cfg.rate, False, 10000000)
 							print "getfreq complete"
-							# performs peak analysis (thump or scrape)
 							vib.simplepeaks(cfg.fft_dat[0], cfg.fft_dat[1], 1, plot_title = str(trial) + " " + features[featuretype] + " " + str(readvar + 1))
+							print "simple peaks complete"
 							print "simple peaks complete"
 						except:
 							print "Woops.  Looks like there's a problem with " + str(trial) + ".wav.  Possibly an issue with your particular .wav file."

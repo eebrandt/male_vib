@@ -471,7 +471,7 @@ def simplepeaks(frq, Y, peaknum, showplot = False, plot_title = "Your plot, fine
 		p3 = plt.plot(peaks[0], peaks[1], linestyle = "none", marker = "o", color = "green")
 		plt.title(plot_title + " - max peak at: " + str(peaks[0][0]) + "Hz")
 		plt.show()
-	print cfg.peaks
+	#print cfg.peaks
 	return cfg.peaks
 
 def rms_feature(amp):
