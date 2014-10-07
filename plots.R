@@ -1,6 +1,9 @@
+#Runs repeated measures-friendly ANOVAS and multcomp Tukey post-hoc tests.
+
 library("lattice", lib.loc="/home/eebrandt/R/x86_64-pc-linux-gnu-library/3.1")
 library("nlme", lib.loc="/home/eebrandt/R/x86_64-pc-linux-gnu-library/3.1")
 library("lme4", lib.loc="/home/eebrandt/R/x86_64-pc-linux-gnu-library/3.1")
+library("multcomp", lib.loc="/home/eebrandt/R/x86_64-pc-linux-gnu-library/3.1")
 
 setwd("~/projects/temp_trials/male_only/data")
 details <- file.info(list.files(pattern="temp_vibration_data*"))
@@ -19,7 +22,7 @@ cols = list(col=c("black","black", "black"),pch=c(16,16,16))
 
 # linear fits, anovas and tukeys for each feature (duration)
 scrapeavg_lme <- lme(scrape_avg ~ treatment, data=complete, random = ~1|individual)
-anovas_savg <- anova(scrapedur_lme)
+anovas_savg <- anova(scrapeavg_lme)
 
 thumpavg_lme <- lme(thump_avg ~ treatment, data=complete, random = ~1|individual)
 anovas_tavg <- anova(thumpavg_lme)
@@ -61,20 +64,19 @@ cat("Buzz Duration\n")
 print(summary(glht(buzzavg_lme, linfct=mcp(treatment = "Tukey")), test = adjusted(type = "bonferroni")))
 cat("Scrape Rates\n")
 print(summary(glht(sravg_lme, linfct=mcp(treatment = "Tukey")), test = adjusted(type = "bonferroni")))
-#cat("Scrape Peak Frequency")
+cat("Scrape Peak Frequency")
 print(summary(glht(sfreq_lme, linfct=mcp(treatment = "Tukey")), test = adjusted(type = "bonferroni")))
-#cat("Thump Peak Frequency")
+cat("Thump Peak Frequency")
 print(summary(glht(tfreq_lme, linfct=mcp(treatment = "Tukey")), test = adjusted(type = "bonferroni")))
-#cat("Buzz Fundamentals\n")
+cat("Buzz Fundamentals\n")
 print(summary(glht(bfreq_lme, linfct=mcp(treatment = "Tukey")), test = adjusted(type = "bonferroni")))
-#cat("Scrape RMS\n")
+cat("Scrape RMS\n")
 print(summary(glht(srms_lme, linfct=mcp(treatment = "Tukey")), test = adjusted(type = "bonferroni")))
-#cat("Thump RMS\n")
+cat("Thump RMS\n")
 print(summary(glht(tfreq_lme, linfct=mcp(treatment = "Tukey")), test = adjusted(type = "bonferroni")))
-#cat("Buzz RMS\n")
+cat("Buzz RMS\n")
 print(summary(glht(bfreq_lme, linfct=mcp(treatment = "Tukey")), test = adjusted(type = "bonferroni")))
 sink()
-
 
 pdf(file = "Tukey_plots.pdf") 
 
