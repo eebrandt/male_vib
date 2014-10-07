@@ -20,23 +20,36 @@ import itertools as it
 import datetime
 import wave
 import scipy
+import pickle
 
 startime = datetime.datetime.now()
 
 
 #print max(wav[1])
 #print float(wav[1][48000 * 46.043])/32768
-vib.importanns("/home/eebrandt/projects/temp_trials/male_only/data/41/5-41/5-41.labels.txt")
-vib.importwav("/media/eebrandt/Erin1/Erin_Berkeley/male_temp_vids/41/5-41.wav", normalize = True)
+vib.importanns("/home/eebrandt/projects/temp_trials/male_only/data/679/27-679/27-679.labels.txt")
+vib.importwav("/media/eebrandt/Erin1/Erin_Berkeley/male_temp_vids/679/27-679.wav", normalize = True)
 #figure(figsize=(3,10))
 #p1 = plt.plot(cfg.t,cfg.y)
 #plt.show()	
 
-vib.featurefinder(cfg.lengths_output, "scrape", 5, cfg.wavdata, .25)
+vib.featurefinder(cfg.lengths_output, "scrape", 11, cfg.wavdata, .25)
+
+resultFile = open("output.csv",'wb')
+wr = csv.writer(resultFile, dialect='excel')
+#wr.writerows(cfg.feature[1])
+
+for value in cfg.feature[0][1]:
+    	wr.writerow([value])
+	#print "something actually happened"
+
+
+#pickle.dump(cfg.feature[1][1], outfile)
+#pickle.dump(cfg.feature, open( "out.txt", "wb" ) )
 #print cfg.wavdata
 #p1 = plt.plot(cfg.feature[0][0],cfg.feature[0][1],'r') # plotting the spectrum
 #plt.show()
-vib.getfreq(cfg.feature[1][1], cfg.rate, True, 10000000)
+#vib.getfreq(cfg.feature[1][1], cfg.rate, 10000000)
 #print cfg.feature[0][1]
 #print cfg.feature[0][1]
 #print cfg.wavdata
@@ -51,7 +64,7 @@ vib.getfreq(cfg.feature[1][1], cfg.rate, True, 10000000)
 #print rms
 #print cfg.rms
 #vib.getpeaks(cfg.fft_dat[0], cfg.fft_dat[1], .10, 10, True, "plot", plotraw = True)
-vib.simplepeaks(cfg.fft_dat[0], cfg.fft_dat[1], 1, False, plot_title = "Your plot, fine sir/madam: ")
+#vib.simplepeaks(cfg.fft_dat[0], cfg.fft_dat[1], 1, False, plot_title = "Your plot, fine sir/madam: ")
 #print cfg.final_peaks
 endtime = datetime.datetime.now()
 

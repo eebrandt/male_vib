@@ -12,6 +12,7 @@ library("nlme", lib.loc="/home/eebrandt/R/x86_64-pc-linux-gnu-library/3.1")
 library("lme4", lib.loc="/home/eebrandt/R/x86_64-pc-linux-gnu-library/3.1")
 
 setwd("~/projects/temp_trials/male_only/data")
+complete <-subset(overall, complete == TRUE)
 details <- file.info(list.files(pattern="temp_vibration_data*"))
 details <- details[with(details, order(as.POSIXct(mtime))), ]
 files = rownames(details)
@@ -28,15 +29,14 @@ plotcols <-c("blue", "dark blue", "cyan", "yellow", "light green", "green", "cha
 
 
 plotvar = 1
-sink("anova_tukey_summaries.txt", append=FALSE, split=TRUE)
+sink("regression_summaries.txt", append=FALSE, split=TRUE)
 pdf(file = "male_temp_plots.pdf")
 with (overall,(
 while(plotvar <= length(feature_list)) {
-  
+  cat(title_list[plotvar])
   # linear function
   linear_model <- lm(get(feature_list[plotvar])~temperature)  
   #abline(linear_model, col = "black", lwd = "3")
-  cat(title_list[plotvar])
   cat("\n\nLinear Model\n")
   print(summary(linear_model))
   
@@ -101,6 +101,7 @@ while(plotvar <= length(feature_list)) {
   anova_rm = aov(get(feature_list[plotvar])~treatment + Error(individual/treatment))
   summary(anova_rm)
   # tukey (non-rm data)
+  cat ("Repeated Measures ANOVA")
   print(TukeyHSD(anova_avg))
 
   # Let's plot it!
@@ -147,4 +148,5 @@ plotvar <- plotvar + 1
   
  
 dev.off()
+#dev.off()
 cat("We turned everything off.")
