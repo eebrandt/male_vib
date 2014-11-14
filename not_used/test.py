@@ -28,18 +28,18 @@ startime = datetime.datetime.now()
 #print max(wav[1])
 #print float(wav[1][48000 * 46.043])/32768
 vib.importanns("/home/eebrandt/projects/temp_trials/male_only/data/679/27-679/27-679.labels.txt")
-vib.importwav("/media/eebrandt/Erin1/Erin_Berkeley/male_temp_vids/679/27-679.wav", normalize = True)
+vib.importwav("/home/eebrandt/projects/temp_trials/test/27-679.wav", normalize = True)
 #figure(figsize=(3,10))
 #p1 = plt.plot(cfg.t,cfg.y)
 #plt.show()	
 
-vib.featurefinder(cfg.lengths_output, "scrape", 11, cfg.wavdata, .25)
+#vib.featurefinder(cfg.lengths_output, "scrape", 11, cfg.wavdata, .25)
 
-resultFile = open("output.csv",'wb')
+resultFile = open("/home/eebrandt/projects/temp_trials/male_only/analysis/output.csv",'wb')
 wr = csv.writer(resultFile, dialect='excel')
-#wr.writerows(cfg.feature[1])
+print cfg.wavdata
 
-for value in cfg.feature[0][1]:
+for value in cfg.wavdata[1]:
     	wr.writerow([value])
 	#print "something actually happened"
 

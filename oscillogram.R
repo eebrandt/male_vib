@@ -1,4 +1,4 @@
-setwd("/home/eebrandt/projects/temp_trials/male_only/src/")
+setwd("/home/eebrandt/projects/temp_trials/male_only/analysis/")
 scrape <- read.csv("output.csv", header = T)
 #adds "time" column that just lists sequential numbers from 0.  This can be divided by 48000
 # to get time in seconds
@@ -15,8 +15,8 @@ time <- scrape$time
 #subsets voltage and time by taking only every other element.  Recommended for scrape and thumps
 # change number to 15 or 20 for buzzes, depending on how long your buzz is.  Will choke graphics
 #program otherwise
-voltage <- voltage[seq(1, length(voltage), 2)]
-time <- time[seq(1, length(time), 2)]
+voltage <- voltage[seq(1, length(voltage), 300)]
+time <- time[seq(1, length(time), 300)]
 
 #plots voltage versus time, which can then be exported to graphics program
 plot(voltage~time, col = "blue", lwd = 1, type = "l")
