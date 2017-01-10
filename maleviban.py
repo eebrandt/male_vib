@@ -395,6 +395,10 @@ def getpeaks(frq, Y, cutoff,  showplot, smooth = 10, plot_title = "Your plot, fi
 	# if we only have one peak, we just write that one to the final_peaks array
 	if len(filter1_peaks[0]) == 1:
 		finalpeaky = max(abs(Y))
+		# filtering step to remove freqencies outside of a reasonable range.  This probably isn't the best option, but since we have
+		# A good idea of what the frequencies should be, this is a reasonable cutoff and we will just remove the feature outright rather 
+		# than trying to fix it.  
+
 		indexy = np.where(abs(Y) == finalpeaky)
 		finalpeakx = frq[indexy]
 		cfg.final_peaks[0] = finalpeakx
