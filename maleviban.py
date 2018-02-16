@@ -8,6 +8,8 @@ import scipy
 import math
 import ctypes
 import tkMessageBox
+import tkSimpleDialog
+import tkinter as tk
 import pylab
 import re
 
@@ -18,8 +20,10 @@ import numpy.ma as ma
 from pylab import*
 from scipy.io.wavfile import read,write
 from numpy import sin, linspace, pi
-from scipy import fft, arange, ifft, signal, fft, arange, ifft
+from scipy import fft, signal, arange
+from scipy.signal import blackmanharris
 from pypeaks import Data, Intervals
+from numpy.fft import rfft, irfft
 
 # the file that contains the variables necessary to run this module
 import config as cfg
@@ -312,17 +316,16 @@ def getfreq(y, Fs, plot, normal = -1):
 	if plot:
 		p1 = plt.plot(cfg.frq,abs(cfg.Y),'r')
 		#pylab.xscale('log')
-		pylab.xlim([0,4000])
+		pylab.xlim([0,1000])
 		pylab.ylim([0,max(abs(cfg.Y))])
 		show()	
-
+		
 	# sets the return variable, which contains frequency and amplitude information
 	cfg.fft_dat = [cfg.frq, cfg.Y]
 	return cfg.fft_dat
+	
 
-
-
-def getpeaks(frq, Y, cutoff,  showplot, smooth = 10, plot_title = "Your plot, fine sir/madam: ", plotraw = False):
+def getpeaks(frq, Y, cutoff,  showplot, plot_title, smooth = 5, plotraw = False):
 	"""
 	Description: This is used to find peaks in an fft. 
 	Parameters: frq: frequency data from an fft, Y: amplitude data from an fft, cutoff: percent of highest peak at which we'll consider
@@ -337,7 +340,6 @@ def getpeaks(frq, Y, cutoff,  showplot, smooth = 10, plot_title = "Your plot, fi
 	Returns: cfg.final_peaks: 2-d array that contains x and y values of the peaks.
 	  
 	"""
-	
 	# first step of getting peaks - smooths the fft
 	# smoothness value can be changed to make the peak-detection more or less sensitive depending on your needs.
 	peaks_obj = Data(frq, Y, smoothness=smooth)
@@ -349,12 +351,10 @@ def getpeaks(frq, Y, cutoff,  showplot, smooth = 10, plot_title = "Your plot, fi
 
 	#pull data out of peaks data object for filtering
 	peaks = peaks_obj.peaks["peaks"]
-	
 	peaksnp = np.zeros((2, len(peaks[0])))
 	peaksnp[0] = peaks[0]
 	peaksnp[1] = peaks[1] 
 	maxpeaks = max(peaks_obj.peaks["peaks"][1])
-	
 
 	# first filtering function: removes peaks that are shorter than the cutoff specified in function
 	filteredypeaks = []
@@ -384,7 +384,6 @@ def getpeaks(frq, Y, cutoff,  showplot, smooth = 10, plot_title = "Your plot, fi
 	# now we have to get the peaks in order, so that each peak is relative to his nearest neighbor.  Important for optimizing peaks in the next step.  this is very important if you don't want innapropriate peaks!
 	indexarray = np.argsort(filter1_peaks[0])
 	indexed_array=filter1_peaks[:,indexarray]	
-	
 	# second filtering step.  Judders peaks back and forth along the x-axis of the frequency plot until they reach the true local max (y)
 	rangeleft_arr = []
 	rangeright_arr = []
@@ -404,7 +403,7 @@ def getpeaks(frq, Y, cutoff,  showplot, smooth = 10, plot_title = "Your plot, fi
 		cfg.final_peaks[0] = finalpeakx
 		finalpeaksy.append(finalpeaky)
 		cfg.final_peaks[1] = finalpeaky
-		maxpeak = round(finalpeakx,0)
+		maxpeak = round(finalpeakx,2)
 	else:
 		readvar = 0
 		while readvar < len(indexed_array[0]):
@@ -439,25 +438,60 @@ def getpeaks(frq, Y, cutoff,  showplot, smooth = 10, plot_title = "Your plot, fi
 			cfg.final_peaks[1][readvar] = finalpeaky
 			maxarray =  max([frq[xmin:xmax]])
 			readvar = readvar + 1
-		maxpeak = round(max(cfg.final_peaks[1]),0)
-	maxpeakstr = str(maxpeak) + " Hz"
+		#figures out where the max. peak is. We do this by finding the highest peak in the y peak values, then finding the index of it in the other part of the array
+		maxy = max(cfg.final_peaks[1])
+		maxyindex = np.where(cfg.final_peaks[1]==maxy)
+		cfg.maxpeak = round(cfg.final_peaks[0][maxyindex],2)
+
+		#get rid of peaks above 1 kHz for when we're calculating that interval
+		peaksforinterval = [x for x in cfg.final_peaks[0] if x < 1000]
+		intervals = []
+		i = 1
+		while i < len(peaksforinterval):
+			intervals.append(peaksforinterval[i]-peaksforinterval[i-1])
+			i += 1
+		fundcalc = np.mean(intervals)
+		fundcalc = round(fundcalc,2)
+
+		# a little error checking for fundamental frequency, in case there are weird peaks further down the line. If the fundamental 			frequency is greater than 10 Hz different from peak frequency, change fundamental to peak. This will catch most (but not all) of 			the issues we were having before
+		if abs(fundcalc - cfg.maxpeak) > 10:
+			fundcalc = cfg.maxpeak
+
+	
+	maxpeakstr = str(cfg.maxpeak) + " Hz"
+	fundcalcstr = str(fundcalc) + " Hz"
+	#this allows the user to double-check peaks and hand-calculate a fundamental  (and peak) if desired. We assume that the peak frequency will be ok regardless, but this algorithm doesn't do a great job with the fundmentals.	
 	if showplot:
 		# shows plot if user requests it
 		# plotting the spectrum
+		fig = plt.gcf()
+		fig.canvas.set_window_title(cfg.plotinfo)
 		p1 = plt.plot(frq,abs(Y),'r') 
-		# plotting the original (non-filtered) peaks
-		p2 = plt.plot(filter1_peaks[0], filter1_peaksy, linestyle = "none", marker = "o", color = "black")
+		# plotting the original (non-filtered) peaks. Uncomment this if you want to see how the peak-optimizing algorithm is working
+		#p2 = plt.plot(c, filter1_peaksy, linestyle = "none", marker = "o", color = "black")
 		# plotting the filtered peaks
-		p3 = plt.plot(cfg.final_peaks[0], cfg.final_peaks[1], linestyle = "none", marker = "o", color = "green")
-		# defines the title based on the string that the user put in
-		plt.title(plot_title + " - max peak at: " + maxpeakstr)
+		p3 = plt.plot(cfg.final_peaks[0], cfg.final_peaks[1], linestyle = "none", marker = "o", color = "black")
+		# Gives max. peak and fundamental in the title
+		plt.title(" Max peak: " + maxpeakstr + "\nFundamental: " + fundcalcstr)
 		pylab.xlim([0,500])
 		xlabel('Freq (Hz)')
 		ylabel('|Y(freq)|')
 		plt.show()
-	
+		
+		peakspresent = np.round_(cfg.final_peaks[0], decimals=2, out=None)
+		peakspresent = re.sub('[ ]+', ' ', re.sub(' *[\\[\\]] *', '', np.array_str(peakspresent)))
+		fundok = tkMessageBox.askyesno(cfg.plotinfo, "Fundamental is calculated as " + fundcalcstr + ". Does this look ok?")
+		if fundok:
+			cfg.fund = fundcalc
+		else:
+			cfg.fund = tkSimpleDialog.askfloat(cfg.plotinfo, "The peaks are:\n" + peakspresent)
+		cfg.fund = round(cfg.fund,2)
+	# a bit more error-checking, in case the peak-finding algorithm completely fails. Note that this assumes that the peak is the same as the fundamental
+	if cfg.maxpeak > 500:
+		cfg.maxpeak = cfg.fund				
 	return cfg.final_peaks
-def simplepeaks(frq, Y, peaknum, showplot = False, plot_title = "Your plot, fine sir/madam: "):
+
+def simplepeaks(frq, Y, peaknum, plot_title, showplot=False):
 	cfg.peaks = []
 	readvar = 0
 	maxpeak = []
@@ -473,9 +507,8 @@ def simplepeaks(frq, Y, peaknum, showplot = False, plot_title = "Your plot, fine
 	if showplot:
 		p1 = plt.plot(frq,abs(Y),'r') 
 		p3 = plt.plot(peaks[0], peaks[1], linestyle = "none", marker = "o", color = "green")
-		plt.title(plot_title + " - max peak at: " + str(peaks[0][0]) + "Hz")
+		plt.title( " - max peak at: " + str(peaks[0][0]) + "Hz")
 		plt.show()
-	#print cfg.peaks
 	return cfg.peaks
 
 def rms_feature(amp):

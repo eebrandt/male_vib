@@ -17,3 +17,6 @@ fft_dat = []
 final_peaks = []
 rms = 0.0
 peaks = [[],[]]
+fund = 0.00
+maxpeak = 0.00
+plotinfo = ""

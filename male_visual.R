@@ -2,13 +2,17 @@
 
 setwd("/home/eebrandt/projects/dissertation/chapter_1/female_choice/data/processed_times")
 visdisp <- read.csv("female_time_final.csv")
-setwd("../../../female_choice/analysis/")
+#setwd("../../../female_choice/analysis/")
 
 visdisp$weight.ratio <- (visdisp$male.weight/visdisp$female.weight)
 visdisp$escapes.trial <- (visdisp$number.of.female.escapes/(visdisp$trial.length/60))
 
-hot <- subset(visdisp, treatment == "warm")
-cold <- subset(visdisp, treatment == "cold")
+visdisp_1<- subset(visdisp, round.number == 1 & grepl("redo", outcome) == FALSE)
+
+
+hot <- subset(visdisp_1, treatment == "warm")
+cold <- subset(visdisp_1, treatment == "cold")
+room <- subset(visdisp_1, treatment =="room")
 
 accept <- subset(hot, outcome =="accept")
 reject <- subset(visdisp, outcome == "reject")
@@ -36,19 +40,24 @@ plot(visdisp$escapes.trial~visdisp$treatment, ylab = "female escapes/minute", xl
 
 plot(hot$number.of.sidles~hot$weight.ratio, col = "red", xlab = "weight ratio", ylab = "number of sidles")
 lines(cold$number.of.sidles~cold$weight.ratio, col = "blue", type = "p")
+lines(room$number.of.sidles~room$weight.ratio, col = "yellow", type = "p")
 
 plot(hot$time.spent.sidling~hot$weight.ratio, col = "red", xlab = "weight ratio", ylab = "time spent sidling")
 lines(cold$time.spent.sidling~cold$weight.ratio, col = "blue", type = "p")
+lines(room$time.spent.sidling~room$weight.ratio, col = "yellow", type = "p")
 
 #female
 plot(hot$grappling.present~hot$weight.ratio, col = "red", xlab = "weight ratio", ylab = "grappling present")
 lines(cold$grappling.present~cold$weight.ratio, col = "blue", type = "p")
+lines(room$grappling.present~room$weight.ratio, col = "yellow", type = "p")
 
 plot(hot$number.of.female.attack.jumps~hot$weight.ratio, col = "red", xlab = "weight ratio", ylab = "number of attack jumps")
 lines(cold$number.of.female.attack.jumps~cold$weight.ratio, col = "blue", type = "p")
+lines(room$number.of.female.attack.jumps~room$weight.ratio, col = "yellow", type = "p")
 
 plot(hot$escapes~hot$weight.ratio, col = "red", xlab = "weight ratio", ylab = "number of attack jumps")
 lines(cold$number.of.female.escapes~cold$weight.ratio, col = "blue", type = "p")
+lines(room$number.of.female.escapes~room$weight.ratio, col = "yellow", type = "p")
 
 # just warm outcome stuff
 par(mfrow=c(3,2))
@@ -124,3 +133,30 @@ t.test(visdisprd2_h$number.of.sidles, visdisprd2_c$number.of.sidles)
 t.test(visdisprd2_h$percent.of.trial.spent.sidling, visdisprd2_c$percent.of.trial.spent.sidling)
 t.test(visdisprd2_h$length.of.movement.bout, visdisprd2_c$length.of.movement.bout)
 
+#length of a movement bout
+aovmovbout <- aov(visdisp_1$length.of.movement.bout~visdisp_1$treatment)
+TukeyHSD(aovmovbout)
+
+#length of a sidling bout
+aovsidbout <- aov(visdisp_1$length.of.sidling.bout~visdisp_1$treatment)
+TukeyHSD(aovsidbout)
+
+#number of movement bouts per sidle
+aovmovsid <- aov(visdisp_1$number.of.movement.bouts.per.sidle~ visdisp_1$treatment)
+TukeyHSD(aovmovsid)
+
+#time spent moving per sidle
+aovmovsidper <- aov(visdisp_1$percent.of.movement.time.per.sidle~ visdisp_1$treatment)
+TukeyHSD(aovmovsidper)
+
+par(mfrow=c(2,3))
+plot(visdisp_1$length.of.movement.bout~visdisp_1$temperature, xlab = "Temperature",  ylab = "Length of movement bout (s)")
+plot(visdisp_1$percent.of.movement.time.per.sidle~ visdisp_1$temperature, xlab = "Temperature", ylab = "Percent of sidle spent moving")
+plot(visdisp_1$number.of.movement.bouts.per.sidle~ visdisp_1$temperature, xlab = "Temperature", ylab = "Number of movement bouts per sidle")
+plot(visdisp_1$length.of.sidling.bout~ visdisp_1$temperature, xlab = "Temperature",  ylab = "Length of sidling bout (s)")
+plot(visdisp_1$number.of.sidles~ visdisp_1$temperature, xlab = "Temperature", ylab = "Number of sidles")
+
+
+outcheck1 <- subset(visdisp_1, visdisp_1$length.of.sidling.bout > 100)
+outcheck2 <- subset(visdisp_1, visdisp_1$number.of.sidles > 12)
+outcheck3 <- subset(visdisp_1, visdisp_1$percent.of.movement.time.per.sidle>40)

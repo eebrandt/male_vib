@@ -27,8 +27,8 @@ startime = datetime.datetime.now()
 
 #print max(wav[1])
 #print float(wav[1][48000 * 46.043])/32768
-vib.importanns("/home/eebrandt/projects/temp_trials/male_only/data/679/27-679/27-679.labels.txt")
-vib.importwav("/home/eebrandt/projects/temp_trials/test/27-679.wav", normalize = True)
+vib.importanns("/home/eebrandt/projects/temp_trials/male_only/data/789/3-789/3-789.labels.txt")
+vib.importwav("/media/eebrandt/Erin1/Erin_Berkeley/male_temp_vids/789/3-789.wav", normalize = True)
 #figure(figsize=(3,10))
 #p1 = plt.plot(cfg.t,cfg.y)
 #plt.show()	
@@ -37,7 +37,9 @@ vib.importwav("/home/eebrandt/projects/temp_trials/test/27-679.wav", normalize =
 
 resultFile = open("/home/eebrandt/projects/temp_trials/male_only/analysis/output.csv",'wb')
 wr = csv.writer(resultFile, dialect='excel')
-print cfg.wavdata
+#print cfg.wavdata
+vib.getfreq(cfg.feature[0][1], cfg.rate, False, 10000000)
+vib.simplepeaks(cfg.fft_dat[0], cfg.fft_dat[1], 1)
 
 for value in cfg.wavdata[1]:
     	wr.writerow([value])
