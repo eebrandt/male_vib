@@ -30,9 +30,8 @@ import csv
 import itertools as it
 # gets current date and time for timestamp
 import datetime
+#for importing file
 import pandas as pd
-
-from itertools import chain
 
 # get timestamp for files we'll save
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -42,8 +41,9 @@ startime_str = "starting at " + startstring
 print startime_str
 
 # ask for file that contains general animal info. (treatment, temp., size & weight, etc.)
-#animal_information_file = tkFileDialog.askopenfilename(initialdir = "/home/eebrandt/projects/dissertation/chapter_1/male_only/data/", title = "Choose the file that contains animal information")   
-animal_information_file = "/home/eebrandt/projects/dissertation/chapter_1/male_only/data/animal_info.csv"
+animal_information_file = tkFileDialog.askopenfilename(initialdir = "/home/eebrandt/projects/dissertation/chapter_1/male_only/data/", title = "Choose the file that contains animal information")   
+#default animal_information file path. Can use this if you're going to be running this a lot rather than having to choose the file each time
+#animal_information_file = "/home/eebrandt/projects/dissertation/chapter_1/male_only/data/animal_info.csv"
 if animal_information_file == "":
 	tkMessageBox.showerror(
             "Open file",
@@ -53,7 +53,6 @@ if animal_information_file == "":
 # opens animal_info file and puts it in an array
 try:
 	animal_info = pd.read_csv(animal_information_file,sep=',', header = 0, dtype = str)
-	#print animal_info
 except:
 	tkMessageBox.showerror(
         "Open file",
@@ -86,7 +85,6 @@ readvar = 0
 while readvar < animal_info.shape[0]:
 	trialname.append(animal_info["video_number"][readvar] + "-" + animal_info["individual"][readvar])
 	readvar = readvar + 1
-#print animal_info
 ndtrialname = np.array(trialname)
 
 # gets the indivudals based on everything that's in the top-level folder (folders and files)
@@ -107,7 +105,7 @@ for individual in individuals:
 			#check to see if we've already analyzed a specific trial, so we can skip it
 			finalfile = annotation_folder + "/" + individual +"/" + trial + "/"+ trial + "_alldata_final.csv"	
 			if os.path.isfile(finalfile):
-				#tkMessageBox.showerror("skipping trial", trial + " already exists. Moving onto next trial.")
+				tkMessageBox.showerror("skipping trial", trial + " already exists. Moving onto next trial.")
 				continue
 			else: 
 				print trial
@@ -115,13 +113,10 @@ for individual in individuals:
 			if os.path.isdir(annotation_folder + "/" + individual + "/" + trial) and os.path.isfile(labelfilename):
 				print trialname
 				trialindex = trialname.index(trial)
-				#print trialname.index(trial)
 				outputarray = []
 				# list to hold animal information (from the animal information file)
 				an_info = []
 				# adding data from the animal_info file to the array that will be written to the csv file eventually.
-				#print animal_info	
-				#print animal_info["tape"]
 				an_info.append(animal_info["tape"][trialindex] + "-" + animal_info["video_number"][trialindex])
 				an_info.append(animal_info["complete"][trialindex])
 				an_info.append(animal_info["individual"][trialindex])
@@ -196,7 +191,6 @@ for individual in individuals:
 					nonbuzz_temp_peaks = []
 					readvar = 0			
 					while readvar < len(cfg.lengths_output[featuretype][5]):
-						#print str(trial) + " " + features[featuretype] + " " + str(readvar + 1)
 						try:
 							#uses "featurefinder" to subset the wav array to a given feature
 							vib.featurefinder(cfg.lengths_output, features[featuretype], readvar, cfg.wavdata, .25)	
@@ -288,9 +282,7 @@ for individual in individuals:
 				npoutput[20][0:lensr] = cfg.srtot[1]
 				# writes the frequency data (peaks for scrape and thump, fundamental and peaks for buzzes)
 				npoutput[21][0:lenscrape] = np.round(nonbuzz_frq[0],2)
-				#npoutput[22][0:lenscrape] = nonbuzz_peak[0]
 				npoutput[22][0:lenthump] = np.round(nonbuzz_frq[1],2)
-				#npoutput[23][0:lenthump] = nonbuzz_peak[1]
 				npoutput[23][0:lenbuzz] = fundarray[0]
 				npoutput[24][0:lenbuzz] = peakarray[0]
 				npoutput[25][0] = animal_info["comments"][trialindex]
